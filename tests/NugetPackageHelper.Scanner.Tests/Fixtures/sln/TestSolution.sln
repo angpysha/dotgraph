@@ -1,0 +1,9 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Core", "..\projects\Core\Core.csproj", "{11111111-0000-0000-0000-000000000001}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Scanner", "..\projects\Scanner\Scanner.csproj", "{11111111-0000-0000-0000-000000000002}"
+EndProject
+Global
+EndGlobal

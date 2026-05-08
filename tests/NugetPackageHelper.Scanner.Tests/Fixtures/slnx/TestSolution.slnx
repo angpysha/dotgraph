@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../projects/Core/Core.csproj" />
+    <Project Path="../projects/Scanner/Scanner.csproj" />
+  </Folder>
+</Solution>

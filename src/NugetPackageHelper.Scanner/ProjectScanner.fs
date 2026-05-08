@@ -1,0 +1,87 @@
+namespace NugetPackageHelper.Scanner
+
+open System.IO
+open System.Xml.Linq
+open NugetPackageHelper.Core
+
+module ProjectScanner =
+
+    type ScanResult = {
+        Node: PackageNode
+        HasVersion: bool
+        Warnings: string list
+    }
+
+    let private resolveName (csprojPath: string) (doc: XDocument) =
+        let find tag =
+            doc.Descendants(XName.Get tag)
+            |> Seq.tryHead
+            |> Option.map (fun el -> el.Value.Trim())
+            |> Option.filter (fun s -> s.Length > 0)
+        find "PackageId"
+        |> Option.orElseWith (fun () -> find "AssemblyName")
+        |> Option.defaultWith (fun () -> Path.GetFileNameWithoutExtension csprojPath)
+
+    let private scanProject (csprojPath: string) : Result<ScanResult, string> =
+        try
+            let doc  = XDocument.Load csprojPath
+            let name = resolveName csprojPath doc
+            let warnings = System.Collections.Generic.List<string>()
+
+            let version =
+                doc.Descendants(XName.Get "Version")
+                |> Seq.tryHead
+                |> Option.bind (fun el -> SemVer.parse el.Value)
+
+            if version.IsNone then
+                warnings.Add $"  ⚠  {name}: no <Version> tag — excluded from graph"
+
+            let dir = Path.GetDirectoryName csprojPath
+            let refs =
+                doc.Descendants(XName.Get "ProjectReference")
+                |> Seq.choose (fun el ->
+                    match el.Attribute(XName.Get "Include") with
+                    | null -> None
+                    | a    ->
+                        let rel = a.Value.Replace('\\', Path.DirectorySeparatorChar)
+                        Some (Path.GetFullPath(Path.Combine(dir, rel))))
+                |> Seq.toList
+
+            let v = version |> Option.defaultValue { Major=0; Minor=0; Patch=0; PreRelease=None }
+            Ok {
+                Node       = { Name = name; Version = v; ProjectPath = csprojPath; Dependencies = refs }
+                HasVersion = version.IsSome
+                Warnings   = warnings |> Seq.toList
+            }
+        with ex ->
+            Error $"Failed to parse '{csprojPath}': {ex.Message}"
+
+    /// Scan all projects and build a DependencyGraph.
+    /// Projects without a <Version> tag are excluded from the graph.
+    let buildGraph (solutionPath: string) (projectPaths: string list) : Result<DependencyGraph * string list, string> =
+        let results = projectPaths |> List.map (fun p -> scanProject p)
+
+        let errors = results |> List.choose (function Error e -> Some e | _ -> None)
+        if errors <> [] then Error (errors |> String.concat "\n")
+        else
+            let scanned  = results |> List.choose (function Ok s -> Some s | _ -> None)
+            let warnings = scanned |> List.collect (fun s -> s.Warnings)
+            let valid    = scanned |> List.filter (fun s -> s.HasVersion)
+            let nodes    = valid |> List.map (fun s -> s.Node)
+
+            let nameByPath = nodes |> List.map (fun n -> n.ProjectPath, n.Name) |> Map.ofList
+
+            let remapped =
+                nodes |> List.map (fun node ->
+                    let internalDeps =
+                        node.Dependencies
+                        |> List.choose (fun path -> Map.tryFind path nameByPath)
+                    { node with Dependencies = internalDeps })
+
+            let packages = remapped |> List.map (fun n -> n.Name, n) |> Map.ofList
+            let graph = {
+                SolutionPath = solutionPath
+                CreatedAt    = System.DateTime.UtcNow
+                Packages     = packages
+            }
+            Ok (graph, warnings)

@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyName>dotgraph</AssemblyName>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dotgraph</ToolCommandName>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Output.fs" />
+    <Compile Include="Interactive.fs" />
+    <Compile Include="Commands/Init.fs" />
+    <Compile Include="Commands/Refresh.fs" />
+    <Compile Include="Commands/Analyze.fs" />
+    <Compile Include="Commands/Diff.fs" />
+    <Compile Include="Commands/Sync.fs" />
+    <Compile Include="Commands/Update.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NugetPackageHelper.Core\NugetPackageHelper.Core.fsproj" />
+    <ProjectReference Include="..\NugetPackageHelper.Scanner\NugetPackageHelper.Scanner.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.55.2" />
+    <PackageReference Include="System.CommandLine" Version="3.0.0-preview.3.26207.106" />
+  </ItemGroup>
+
+</Project>

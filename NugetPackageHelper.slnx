@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NugetPackageHelper.Cli/NugetPackageHelper.Cli.fsproj" />
+    <Project Path="src/NugetPackageHelper.Core/NugetPackageHelper.Core.fsproj" />
+    <Project Path="src/NugetPackageHelper.Scanner/NugetPackageHelper.Scanner.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NugetPackageHelper.Core.Tests/NugetPackageHelper.Core.Tests.fsproj" />
+    <Project Path="tests/NugetPackageHelper.Scanner.Tests/NugetPackageHelper.Scanner.Tests.fsproj" />
+  </Folder>
+</Solution>
