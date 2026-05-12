@@ -22,19 +22,33 @@ module ProjectScanner =
         |> Option.orElseWith (fun () -> find "AssemblyName")
         |> Option.defaultWith (fun () -> Path.GetFileNameWithoutExtension csprojPath)
 
+    let private resolveVersion (doc: XDocument) : SemVer option =
+        let find tag =
+            doc.Descendants(XName.Get tag)
+            |> Seq.tryHead
+            |> Option.map (fun el -> el.Value.Trim())
+            |> Option.filter (fun s -> s.Length > 0)
+        find "PackageVersion" |> Option.bind SemVer.parse
+        |> Option.orElseWith (fun () -> find "Version" |> Option.bind SemVer.parse)
+        |> Option.orElseWith (fun () ->
+            find "VersionPrefix"
+            |> Option.bind (fun prefix ->
+                let full =
+                    match find "VersionSuffix" with
+                    | Some s when s.Length > 0 -> $"{prefix}-{s}"
+                    | _                        -> prefix
+                SemVer.parse full))
+
     let private scanProject (csprojPath: string) : Result<ScanResult, string> =
         try
             let doc  = XDocument.Load csprojPath
             let name = resolveName csprojPath doc
             let warnings = System.Collections.Generic.List<string>()
 
-            let version =
-                doc.Descendants(XName.Get "Version")
-                |> Seq.tryHead
-                |> Option.bind (fun el -> SemVer.parse el.Value)
+            let version = resolveVersion doc
 
             if version.IsNone then
-                warnings.Add $"  ⚠  {name}: no <Version> tag — excluded from graph"
+                warnings.Add $"  ⚠  {name}: no <PackageVersion>, <Version>, or <VersionPrefix> tag — excluded from graph"
 
             let dir = Path.GetDirectoryName csprojPath
             let refs =
@@ -57,7 +71,7 @@ module ProjectScanner =
             Error $"Failed to parse '{csprojPath}': {ex.Message}"
 
     /// Scan all projects and build a DependencyGraph.
-    /// Projects without a <Version> tag are excluded from the graph.
+    /// Projects without a <PackageVersion>, <Version>, or <VersionPrefix> tag are excluded from the graph.
     let buildGraph (solutionPath: string) (projectPaths: string list) : Result<DependencyGraph * string list, string> =
         let results = projectPaths |> List.map (fun p -> scanProject p)
 

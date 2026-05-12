@@ -7,9 +7,18 @@
 
   <PropertyGroup>
     <AssemblyName>dotgraph</AssemblyName>
+    <PackageId>dotgraph</PackageId>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotgraph</ToolCommandName>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
+    <Authors>angpysha</Authors>
+    <Description>CLI tool that detects and cascades version bumps across internally published NuGet packages in a .NET solution.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/angpysha/nugraph</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/angpysha/nugraph</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>nuget;versioning;semver;dependency-graph;dotnet-tool</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Output.fs" />
@@ -31,6 +40,10 @@
   <ItemGroup>
     <PackageReference Include="Spectre.Console" Version="0.55.2" />
     <PackageReference Include="System.CommandLine" Version="3.0.0-preview.3.26207.106" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

@@ -10,10 +10,18 @@ open NugetPackageHelper.Scanner
 let private fixturesDir =
     Path.Combine(AppContext.BaseDirectory, "Fixtures")
 
-let private coreCsproj    = Path.Combine(fixturesDir, "projects", "Core",      "Core.csproj")
-let private scannerCsproj = Path.Combine(fixturesDir, "projects", "Scanner",   "Scanner.csproj")
-let private noVerCsproj   = Path.Combine(fixturesDir, "projects", "NoVersion", "NoVersion.csproj")
-let private fakeSln       = Path.Combine(fixturesDir, "slnx", "TestSolution.slnx")
+let private coreCsproj         = Path.Combine(fixturesDir, "projects", "Core",             "Core.csproj")
+let private scannerCsproj      = Path.Combine(fixturesDir, "projects", "Scanner",          "Scanner.csproj")
+let private noVerCsproj        = Path.Combine(fixturesDir, "projects", "NoVersion",        "NoVersion.csproj")
+let private pkgVersionCsproj        = Path.Combine(fixturesDir, "projects", "PackageVersion",        "PackageVersion.csproj")
+let private verPrefixCsproj         = Path.Combine(fixturesDir, "projects", "VersionPrefix",         "VersionPrefix.csproj")
+let private verPrefixSuffCsproj     = Path.Combine(fixturesDir, "projects", "VersionPrefixSuffix",   "VersionPrefixSuffix.csproj")
+let private pkgVerWinsCsproj        = Path.Combine(fixturesDir, "projects", "PkgVersionWinsOverVersion",  "PkgVersionWinsOverVersion.csproj")
+let private verWinsPrefixCsproj     = Path.Combine(fixturesDir, "projects", "VersionWinsOverPrefix",      "VersionWinsOverPrefix.csproj")
+let private verPreReleaseCsproj     = Path.Combine(fixturesDir, "projects", "VersionPreRelease",          "VersionPreRelease.csproj")
+let private emptyVerSuffCsproj      = Path.Combine(fixturesDir, "projects", "EmptyVersionSuffix",         "EmptyVersionSuffix.csproj")
+let private suffixOnlyCsproj        = Path.Combine(fixturesDir, "projects", "SuffixOnly",                 "SuffixOnly.csproj")
+let private fakeSln                 = Path.Combine(fixturesDir, "slnx", "TestSolution.slnx")
 
 // ── buildGraph ─────────────────────────────────────────────────────────────
 
@@ -61,3 +69,76 @@ let ``buildGraph sets SolutionPath on graph`` () =
     | Error e -> failwith e
     | Ok (graph, _) ->
         graph.SolutionPath |> should equal fakeSln
+
+// ── version tag fallbacks ──────────────────────────────────────────────────
+
+[<Fact>]
+let ``buildGraph reads PackageVersion tag`` () =
+    match ProjectScanner.buildGraph fakeSln [pkgVersionCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages["PackageVersion"].Version
+        |> should equal { Major=2; Minor=0; Patch=0; PreRelease=None }
+
+[<Fact>]
+let ``buildGraph reads VersionPrefix when no Version`` () =
+    match ProjectScanner.buildGraph fakeSln [verPrefixCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages["VersionPrefix"].Version
+        |> should equal { Major=1; Minor=5; Patch=0; PreRelease=None }
+
+[<Fact>]
+let ``buildGraph reads VersionPrefix combined with VersionSuffix`` () =
+    match ProjectScanner.buildGraph fakeSln [verPrefixSuffCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages["VersionPrefixSuffix"].Version
+        |> should equal { Major=1; Minor=5; Patch=0; PreRelease=Some "beta.1" }
+        warnings |> List.isEmpty |> should equal true
+
+// ── priority overrides ────────────────────────────────────────────────────
+
+[<Fact>]
+let ``PackageVersion wins over Version when both present`` () =
+    match ProjectScanner.buildGraph fakeSln [pkgVerWinsCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages["PkgVersionWinsOverVersion"].Version
+        |> should equal { Major=3; Minor=0; Patch=0; PreRelease=None }
+
+[<Fact>]
+let ``Version wins over VersionPrefix when both present`` () =
+    match ProjectScanner.buildGraph fakeSln [verWinsPrefixCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages["VersionWinsOverPrefix"].Version
+        |> should equal { Major=2; Minor=5; Patch=0; PreRelease=None }
+
+// ── edge cases ────────────────────────────────────────────────────────────
+
+[<Fact>]
+let ``Version tag with pre-release is parsed correctly`` () =
+    match ProjectScanner.buildGraph fakeSln [verPreReleaseCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages["VersionPreRelease"].Version
+        |> should equal { Major=2; Minor=0; Patch=0; PreRelease=Some "rc.2" }
+        warnings |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``empty VersionSuffix is treated as absent and uses VersionPrefix only`` () =
+    match ProjectScanner.buildGraph fakeSln [emptyVerSuffCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages["EmptyVersionSuffix"].Version
+        |> should equal { Major=1; Minor=3; Patch=0; PreRelease=None }
+        warnings |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``VersionSuffix alone without prefix produces no version and emits warning`` () =
+    match ProjectScanner.buildGraph fakeSln [suffixOnlyCsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages.ContainsKey "SuffixOnly" |> should equal false
+        warnings |> List.isEmpty |> should equal false
