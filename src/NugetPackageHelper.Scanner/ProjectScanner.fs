@@ -12,7 +12,7 @@ module ProjectScanner =
         Warnings: string list
     }
 
-    let private resolveName (csprojPath: string) (doc: XDocument) =
+    let private resolveName (projPath: string) (doc: XDocument) =
         let find tag =
             doc.Descendants(XName.Get tag)
             |> Seq.tryHead
@@ -20,7 +20,7 @@ module ProjectScanner =
             |> Option.filter (fun s -> s.Length > 0)
         find "PackageId"
         |> Option.orElseWith (fun () -> find "AssemblyName")
-        |> Option.defaultWith (fun () -> Path.GetFileNameWithoutExtension csprojPath)
+        |> Option.defaultWith (fun () -> Path.GetFileNameWithoutExtension projPath)
 
     let private resolveVersion (doc: XDocument) : SemVer option =
         let find tag =
@@ -39,10 +39,10 @@ module ProjectScanner =
                     | _                        -> prefix
                 SemVer.parse full))
 
-    let private scanProject (csprojPath: string) : Result<ScanResult, string> =
+    let private scanProject (projPath: string) : Result<ScanResult, string> =
         try
-            let doc  = XDocument.Load csprojPath
-            let name = resolveName csprojPath doc
+            let doc  = XDocument.Load projPath
+            let name = resolveName projPath doc
             let warnings = System.Collections.Generic.List<string>()
 
             let version = resolveVersion doc
@@ -50,7 +50,7 @@ module ProjectScanner =
             if version.IsNone then
                 warnings.Add $"  ⚠  {name}: no <PackageVersion>, <Version>, or <VersionPrefix> tag — excluded from graph"
 
-            let dir = Path.GetDirectoryName csprojPath
+            let dir = Path.GetDirectoryName projPath
             let refs =
                 doc.Descendants(XName.Get "ProjectReference")
                 |> Seq.choose (fun el ->
@@ -63,12 +63,12 @@ module ProjectScanner =
 
             let v = version |> Option.defaultValue { Major=0; Minor=0; Patch=0; PreRelease=None }
             Ok {
-                Node       = { Name = name; Version = v; ProjectPath = csprojPath; Dependencies = refs }
+                Node       = { Name = name; Version = v; ProjectPath = projPath; Dependencies = refs }
                 HasVersion = version.IsSome
                 Warnings   = warnings |> Seq.toList
             }
         with ex ->
-            Error $"Failed to parse '{csprojPath}': {ex.Message}"
+            Error $"Failed to parse '{projPath}': {ex.Message}"
 
     /// Scan all projects and build a DependencyGraph.
     /// Projects without a <PackageVersion>, <Version>, or <VersionPrefix> tag are excluded from the graph.

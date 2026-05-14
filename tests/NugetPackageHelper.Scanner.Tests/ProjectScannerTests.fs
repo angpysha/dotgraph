@@ -21,6 +21,7 @@ let private verWinsPrefixCsproj     = Path.Combine(fixturesDir, "projects", "Ver
 let private verPreReleaseCsproj     = Path.Combine(fixturesDir, "projects", "VersionPreRelease",          "VersionPreRelease.csproj")
 let private emptyVerSuffCsproj      = Path.Combine(fixturesDir, "projects", "EmptyVersionSuffix",         "EmptyVersionSuffix.csproj")
 let private suffixOnlyCsproj        = Path.Combine(fixturesDir, "projects", "SuffixOnly",                 "SuffixOnly.csproj")
+let private fsharpLibFsproj         = Path.Combine(fixturesDir, "projects", "FSharpLib",                  "FSharpLib.fsproj")
 let private fakeSln                 = Path.Combine(fixturesDir, "slnx", "TestSolution.slnx")
 
 // ── buildGraph ─────────────────────────────────────────────────────────────
@@ -142,3 +143,34 @@ let ``VersionSuffix alone without prefix produces no version and emits warning``
     | Ok (graph, warnings) ->
         graph.Packages.ContainsKey "SuffixOnly" |> should equal false
         warnings |> List.isEmpty |> should equal false
+
+// ── .fsproj support ───────────────────────────────────────────────────────
+
+[<Fact>]
+let ``buildGraph scans fsproj and reads version`` () =
+    match ProjectScanner.buildGraph fakeSln [fsharpLibFsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages.ContainsKey "MyCompany.FSharpLib" |> should equal true
+        graph.Packages["MyCompany.FSharpLib"].Version
+        |> should equal { Major=3; Minor=1; Patch=0; PreRelease=None }
+        warnings |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``buildGraph remaps ProjectReference from fsproj to csproj dependency`` () =
+    match ProjectScanner.buildGraph fakeSln [coreCsproj; fsharpLibFsproj] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages["MyCompany.FSharpLib"].Dependencies
+        |> should equal ["MyCompany.Core"]
+
+[<Fact>]
+let ``buildGraph handles mixed csproj and fsproj in same graph`` () =
+    match ProjectScanner.buildGraph fakeSln [coreCsproj; scannerCsproj; fsharpLibFsproj] with
+    | Error e -> failwith e
+    | Ok (graph, warnings) ->
+        graph.Packages.Count |> should equal 3
+        graph.Packages.ContainsKey "MyCompany.Core"      |> should equal true
+        graph.Packages.ContainsKey "MyCompany.Scanner"   |> should equal true
+        graph.Packages.ContainsKey "MyCompany.FSharpLib" |> should equal true
+        warnings |> List.isEmpty |> should equal true
