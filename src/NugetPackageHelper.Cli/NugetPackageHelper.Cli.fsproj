@@ -10,7 +10,7 @@
     <PackageId>dotgraph</PackageId>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotgraph</ToolCommandName>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Authors>angpysha</Authors>
     <Description>CLI tool that detects and cascades version bumps across internally published NuGet packages in a .NET solution.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

@@ -22,10 +22,15 @@ module ProjectScanner =
         |> Option.orElseWith (fun () -> find "AssemblyName")
         |> Option.defaultWith (fun () -> Path.GetFileNameWithoutExtension projPath)
 
+    let private findElement (doc: XDocument) tag =
+        doc.Descendants(XName.Get tag) |> Seq.tryHead
+
+    let private hasNonEmptyValue (el: XElement) =
+        el.Value.Trim().Length > 0
+
     let private resolveVersion (doc: XDocument) : SemVer option =
         let find tag =
-            doc.Descendants(XName.Get tag)
-            |> Seq.tryHead
+            findElement doc tag
             |> Option.map (fun el -> el.Value.Trim())
             |> Option.filter (fun s -> s.Length > 0)
         find "PackageVersion" |> Option.bind SemVer.parse
@@ -38,6 +43,54 @@ module ProjectScanner =
                     | Some s when s.Length > 0 -> $"{prefix}-{s}"
                     | _                        -> prefix
                 SemVer.parse full))
+
+    type private VersionWriteTarget =
+        | SingleTag of XElement
+        | PrefixSuffixTags of XElement * XElement option
+
+    let private resolveVersionWriteTarget (doc: XDocument) : VersionWriteTarget option =
+        findElement doc "PackageVersion"
+        |> Option.filter hasNonEmptyValue
+        |> Option.map SingleTag
+        |> Option.orElseWith (fun () ->
+            findElement doc "Version"
+            |> Option.filter hasNonEmptyValue
+            |> Option.map SingleTag)
+        |> Option.orElseWith (fun () ->
+            findElement doc "VersionPrefix"
+            |> Option.filter hasNonEmptyValue
+            |> Option.map (fun prefixEl ->
+                PrefixSuffixTags (prefixEl, findElement doc "VersionSuffix")))
+
+    /// Write a version back to the same tag(s) used when reading (PackageVersion, Version, or VersionPrefix/VersionSuffix).
+    let writeVersion (projectPath: string) (version: SemVer) : Result<unit, string> =
+        let writePrefixSuffix (prefixEl: XElement) (suffixEl: XElement option) =
+            prefixEl.Value <- $"{version.Major}.{version.Minor}.{version.Patch}"
+            match version.PreRelease with
+            | None ->
+                suffixEl |> Option.iter (fun el -> el.Value <- "")
+            | Some pre ->
+                match suffixEl with
+                | Some el -> el.Value <- pre
+                | None ->
+                    let suffix = XElement(XName.Get "VersionSuffix", pre)
+                    prefixEl.AddAfterSelf suffix
+
+        try
+            let doc = XDocument.Load projectPath
+            match resolveVersionWriteTarget doc with
+            | None ->
+                Error $"No <PackageVersion>, <Version>, or <VersionPrefix> element in {projectPath}"
+            | Some (PrefixSuffixTags (prefixEl, suffixEl)) ->
+                writePrefixSuffix prefixEl suffixEl
+                doc.Save projectPath
+                Ok ()
+            | Some (SingleTag el) ->
+                el.Value <- SemVer.toString version
+                doc.Save projectPath
+                Ok ()
+        with ex ->
+            Error $"Failed to write {projectPath}: {ex.Message}"
 
     let private scanProject (projPath: string) : Result<ScanResult, string> =
         try
