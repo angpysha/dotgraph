@@ -1,22 +1,9 @@
 module NugetPackageHelper.Cli.Commands.Sync
 
 open System.IO
-open System.Xml.Linq
 open NugetPackageHelper.Core
 open NugetPackageHelper.Scanner
 open NugetPackageHelper.Cli
-
-let private writeVersionToCsproj (projectPath: string) (version: SemVer) : Result<unit, string> =
-    try
-        let doc = XDocument.Load projectPath
-        match doc.Descendants(XName.Get "Version") |> Seq.tryHead with
-        | None -> Error $"No <Version> element in {projectPath}"
-        | Some el ->
-            el.Value <- SemVer.toString version
-            doc.Save projectPath
-            Ok ()
-    with ex ->
-        Error $"Failed to write {projectPath}: {ex.Message}"
 
 let private applyChanges
     (graph: DependencyGraph)
@@ -32,7 +19,7 @@ let private applyChanges
             match Map.tryFind name graph.Packages with
             | None -> firstError <- Some $"Package '{name}' not found in graph"
             | Some node ->
-                match writeVersionToCsproj node.ProjectPath newVersion with
+                match ProjectScanner.writeVersion node.ProjectPath newVersion with
                 | Error e -> firstError <- Some e
                 | Ok () ->
                     updatedPackages <- updatedPackages |> Map.add name { node with Version = newVersion }

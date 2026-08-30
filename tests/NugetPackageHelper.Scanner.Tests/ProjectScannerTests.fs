@@ -174,3 +174,54 @@ let ``buildGraph handles mixed csproj and fsproj in same graph`` () =
         graph.Packages.ContainsKey "MyCompany.Scanner"   |> should equal true
         graph.Packages.ContainsKey "MyCompany.FSharpLib" |> should equal true
         warnings |> List.isEmpty |> should equal true
+
+// ── writeVersion ───────────────────────────────────────────────────────────
+
+let private copyFixtureToTemp (sourcePath: string) : string =
+    let tempDir = Path.Combine(Path.GetTempPath(), "dotgraph-tests", Guid.NewGuid().ToString("N"))
+    Directory.CreateDirectory tempDir |> ignore
+    let destPath = Path.Combine(tempDir, Path.GetFileName sourcePath)
+    File.Copy(sourcePath, destPath)
+    destPath
+
+let private readVersionFromProject (projectPath: string) =
+    match ProjectScanner.buildGraph fakeSln [projectPath] with
+    | Error e -> failwith e
+    | Ok (graph, _) ->
+        graph.Packages.Values |> Seq.head |> fun n -> n.Version
+
+[<Fact>]
+let ``writeVersion updates PackageVersion tag`` () =
+    let path = copyFixtureToTemp pkgVersionCsproj
+    let newVersion = { Major=2; Minor=1; Patch=0; PreRelease=None }
+    match ProjectScanner.writeVersion path newVersion with
+    | Error e -> failwith e
+    | Ok () ->
+        readVersionFromProject path |> should equal newVersion
+
+[<Fact>]
+let ``writeVersion updates PackageVersion when both PackageVersion and Version present`` () =
+    let path = copyFixtureToTemp pkgVerWinsCsproj
+    let newVersion = { Major=3; Minor=1; Patch=0; PreRelease=None }
+    match ProjectScanner.writeVersion path newVersion with
+    | Error e -> failwith e
+    | Ok () ->
+        readVersionFromProject path |> should equal newVersion
+
+[<Fact>]
+let ``writeVersion updates VersionPrefix and VersionSuffix`` () =
+    let path = copyFixtureToTemp verPrefixSuffCsproj
+    let newVersion = { Major=1; Minor=6; Patch=0; PreRelease=Some "beta.2" }
+    match ProjectScanner.writeVersion path newVersion with
+    | Error e -> failwith e
+    | Ok () ->
+        readVersionFromProject path |> should equal newVersion
+
+[<Fact>]
+let ``writeVersion updates VersionPrefix only project`` () =
+    let path = copyFixtureToTemp verPrefixCsproj
+    let newVersion = { Major=1; Minor=6; Patch=0; PreRelease=None }
+    match ProjectScanner.writeVersion path newVersion with
+    | Error e -> failwith e
+    | Ok () ->
+        readVersionFromProject path |> should equal newVersion
