@@ -3,21 +3,57 @@ module NugetPackageHelper.Cli.Output
 open Spectre.Console
 open NugetPackageHelper.Core
 
-let private bumpMarkup = function
-    | Major -> "[red]MAJOR[/]"
-    | Minor -> "[yellow]MINOR[/]"
-    | Patch -> "[green]PATCH[/]"
+/// Shared Spectre.Console words and colors for diff, proposals, and interactive review.
+/// MAJOR is red, MINOR is yellow, PATCH is green, SUFFIX is grey, Error is red, Warning is yellow.
+[<RequireQualifiedAccess>]
+type ReviewLabel =
+    | Bump of BumpType
+    | Error
+    | Warning
 
-let private vStr = SemVer.toString
+/// One helper owns the review words and their markup. The word remains when color is stripped.
+let markup = function
+    | ReviewLabel.Bump Major -> "[red]MAJOR[/]"
+    | ReviewLabel.Bump Minor -> "[yellow]MINOR[/]"
+    | ReviewLabel.Bump Patch -> "[green]PATCH[/]"
+    | ReviewLabel.Bump Suffix -> "[grey]SUFFIX[/]"
+    | ReviewLabel.Error -> "[red]Error[/]"
+    | ReviewLabel.Warning -> "[yellow]Warning[/]"
+
+let private prefixText (v: SemVer) =
+    $"{v.Major}.{v.Minor}.{v.Patch}"
+
+/// Absent or blank pre-release is the word none.
+let private suffixText (v: SemVer) =
+    match v.PreRelease with
+    | Some pre when not (System.String.IsNullOrWhiteSpace pre) -> pre
+    | _ -> "none"
 
 let error (msg: string) =
-    AnsiConsole.MarkupLine $"[red]Error:[/] {Markup.Escape msg}"
+    AnsiConsole.MarkupLine $"{markup ReviewLabel.Error}: {Markup.Escape msg}"
 
 let warn (msg: string) =
-    AnsiConsole.MarkupLine $"[yellow]Warning:[/] {Markup.Escape msg}"
+    AnsiConsole.MarkupLine $"{markup ReviewLabel.Warning}: {Markup.Escape msg}"
 
 let success (msg: string) =
     AnsiConsole.MarkupLine $"[green]{Markup.Escape msg}[/]"
+
+let private addReviewRow
+    (table: Table)
+    (name: string)
+    (current: SemVer)
+    (proposed: SemVer)
+    (bump: BumpType)
+    (reason: string) =
+    table.AddRow(
+        name,
+        Markup.Escape (prefixText current),
+        Markup.Escape (suffixText current),
+        Markup.Escape (prefixText proposed),
+        Markup.Escape (suffixText proposed),
+        markup (ReviewLabel.Bump bump),
+        Markup.Escape reason
+    ) |> ignore
 
 let printProposals
     (rootChanges: (string * SemVer * SemVer) list)
@@ -25,31 +61,45 @@ let printProposals
 
     let table = Table().BorderColor(Color.Grey)
     table.AddColumn("Package") |> ignore
-    table.AddColumn("From") |> ignore
-    table.AddColumn("To") |> ignore
-    table.AddColumn("Bump") |> ignore
+    table.AddColumn("Current prefix") |> ignore
+    table.AddColumn("Current suffix") |> ignore
+    table.AddColumn("Proposed prefix") |> ignore
+    table.AddColumn("Proposed suffix") |> ignore
+    table.AddColumn("Change") |> ignore
     table.AddColumn("Reason") |> ignore
 
     for (name, old, new') in rootChanges do
-        let bump = SemVer.detectBump old new'
-        table.AddRow(
-            $"[bold]{Markup.Escape name}[/]",
-            Markup.Escape (vStr old),
-            $"[bold]{Markup.Escape (vStr new')}[/]",
-            bumpMarkup bump,
+        addReviewRow
+            table
+            $"[bold]{Markup.Escape name}[/]"
+            old
+            new'
+            (SemVer.detectBump old new')
             "(explicit)"
-        ) |> ignore
 
     for p in proposals do
-        table.AddRow(
-            Markup.Escape p.PackageName,
-            Markup.Escape (vStr p.CurrentVersion),
-            Markup.Escape (vStr p.ProposedVersion),
-            bumpMarkup p.BumpType,
-            Markup.Escape p.Reason
-        ) |> ignore
+        addReviewRow
+            table
+            (Markup.Escape p.PackageName)
+            p.CurrentVersion
+            p.ProposedVersion
+            p.BumpType
+            p.Reason
 
     AnsiConsole.Write table
+
+let private printReviewLine
+    (name: string)
+    (current: SemVer)
+    (proposed: SemVer)
+    (bump: BumpType)
+    (reason: string) =
+    AnsiConsole.MarkupLine(
+        $"  [bold]{Markup.Escape name}[/]  " +
+        $"prefix {Markup.Escape (prefixText current)} → {Markup.Escape (prefixText proposed)}  " +
+        $"suffix {Markup.Escape (suffixText current)} → {Markup.Escape (suffixText proposed)}  " +
+        $"{markup (ReviewLabel.Bump bump)}  " +
+        $"[grey]{Markup.Escape reason}[/]")
 
 let printDiff (diff: SnapshotDiff) =
     if diff.Changed.IsEmpty then
@@ -57,28 +107,32 @@ let printDiff (diff: SnapshotDiff) =
     else
         AnsiConsole.MarkupLine "\n[bold]Changed packages (vs snapshot):[/]"
         for c in diff.Changed do
-            AnsiConsole.MarkupLine(
-                $"  [bold]{Markup.Escape c.PackageName}[/]  " +
-                $"{Markup.Escape (vStr c.SnapshotVersion)} → " +
-                $"[bold]{Markup.Escape (vStr c.CurrentVersion)}[/]  " +
-                $"{bumpMarkup c.BumpType}")
+            printReviewLine
+                c.PackageName
+                c.SnapshotVersion
+                c.CurrentVersion
+                c.BumpType
+                "changed vs snapshot"
 
     if diff.CascadeGaps <> [] then
         AnsiConsole.MarkupLine "\n[bold yellow]Cascade gaps (need version bumps):[/]"
         for p in diff.CascadeGaps do
-            AnsiConsole.MarkupLine(
-                $"  {Markup.Escape p.PackageName}  " +
-                $"{Markup.Escape (vStr p.CurrentVersion)} → propose " +
-                $"[bold]{Markup.Escape (vStr p.ProposedVersion)}[/]  " +
-                $"{bumpMarkup p.BumpType}  [grey]{Markup.Escape p.Reason}[/]")
+            printReviewLine
+                p.PackageName
+                p.CurrentVersion
+                p.ProposedVersion
+                p.BumpType
+                p.Reason
 
     if diff.AlreadyCovered <> [] then
         AnsiConsole.MarkupLine "\n[bold green]Already covered (no action needed):[/]"
         for p in diff.AlreadyCovered do
-            AnsiConsole.MarkupLine(
-                $"  {Markup.Escape p.PackageName}  " +
-                $"{Markup.Escape (vStr p.CurrentVersion)} [green]✓[/]  " +
-                $"[grey]{Markup.Escape p.Reason}[/]")
+            printReviewLine
+                p.PackageName
+                p.CurrentVersion
+                p.ProposedVersion
+                p.BumpType
+                p.Reason
 
 let confirm (msg: string) : bool =
     AnsiConsole.Confirm msg

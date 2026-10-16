@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageSuffix>beta.1</PackageSuffix>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>

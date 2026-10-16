@@ -106,3 +106,44 @@ let ``maxBump picks the larger bump`` () =
     SemVer.maxBump Major Minor |> should equal Major
     SemVer.maxBump Patch Minor |> should equal Minor
     SemVer.maxBump Patch Patch |> should equal Patch
+
+// ── suffix ordering and bumps ──────────────────────────────────────────────
+
+[<Fact>]
+let ``suffix compare orders 1.0.0-beta before 1.0.0`` () =
+    let beta = SemVer.parse "1.0.0-beta" |> Option.get
+    let release = SemVer.parse "1.0.0" |> Option.get
+    sign (SemVer.compare beta release) |> should equal -1
+
+[<Fact>]
+let ``suffix compare orders 1.0.0-beta.2 before 1.0.0-beta.10`` () =
+    let beta2 = SemVer.parse "1.0.0-beta.2" |> Option.get
+    let beta10 = SemVer.parse "1.0.0-beta.10" |> Option.get
+    sign (SemVer.compare beta2 beta10) |> should equal -1
+
+[<Fact>]
+let ``suffix isDowngrade from 1.2.0 to 1.2.0-beta`` () =
+    let current = SemVer.parse "1.2.0" |> Option.get
+    let earlier = SemVer.parse "1.2.0-beta" |> Option.get
+    SemVer.isDowngrade current earlier |> should equal true
+
+[<Fact>]
+let ``suffix isDowngrade is false from 1.2.0-beta to 1.2.0`` () =
+    let current = SemVer.parse "1.2.0-beta" |> Option.get
+    let release = SemVer.parse "1.2.0" |> Option.get
+    SemVer.isDowngrade current release |> should equal false
+
+[<Theory>]
+[<InlineData("1.2.0", "1.2.0-beta")>]
+[<InlineData("1.2.0-beta", "1.2.0")>]
+let ``suffix detectBump names equal numbers with a different suffix`` oldV newV =
+    let old = SemVer.parse oldV |> Option.get
+    let new' = SemVer.parse newV |> Option.get
+    let bump = SemVer.detectBump old new'
+    bump.ToString() |> should equal "Suffix"
+
+[<Fact>]
+let ``suffix applyBump Patch keeps pre-release`` () =
+    let v = SemVer.parse "1.2.3-beta" |> Option.get
+    SemVer.applyBump Patch v
+    |> should equal { Major = 1; Minor = 2; Patch = 4; PreRelease = Some "beta" }

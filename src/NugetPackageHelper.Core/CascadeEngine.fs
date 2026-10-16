@@ -16,9 +16,14 @@ module CascadeEngine =
         let upstream = Graph.findUpstreamOrdered graph roots
 
         // Track the effective bump type for each package (roots + proposed dependents).
+        // Record a root only for a numeric bump that is not a downgrade.
+        // Suffix-only changes and earlier releases do not cascade.
         let effectiveBumps = Dictionary<string, BumpType>()
         for (name, old, new') in rootChanges do
-            effectiveBumps[name] <- SemVer.detectBump old new'
+            match SemVer.detectBump old new' with
+            | Suffix -> ()
+            | bump when SemVer.isDowngrade old new' -> ()
+            | bump -> effectiveBumps[name] <- bump
 
         let proposals = ResizeArray<VersionProposal>()
 
@@ -41,7 +46,11 @@ module CascadeEngine =
 
                     let maxDepName, maxDepBump =
                         triggerBumps |> List.maxBy (fun (_, b) ->
-                            match b with Major -> 2 | Minor -> 1 | Patch -> 0)
+                            match b with
+                            | Major -> 2
+                            | Minor -> 1
+                            | Patch -> 0
+                            | Suffix -> -1)
 
                     let depList = triggerBumps |> List.map fst |> String.concat ", "
                     let reason  = $"depends on {depList} ({SemVer.bumpLabel maxDepBump} bump)"

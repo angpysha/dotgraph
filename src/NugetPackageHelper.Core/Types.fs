@@ -7,7 +7,7 @@ type SemVer = {
     PreRelease: string option
 }
 
-type BumpType = Major | Minor | Patch
+type BumpType = Major | Minor | Patch | Suffix
 
 type PackageNode = {
     Name: string

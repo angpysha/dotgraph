@@ -5,6 +5,7 @@ open FsUnit.Xunit
 open NugetPackageHelper.Core
 
 let private ver major minor patch = { Major=major; Minor=minor; Patch=patch; PreRelease=None }
+let private verPre major minor patch pre = { Major=major; Minor=minor; Patch=patch; PreRelease=Some pre }
 let private v100 = ver 1 0 0
 
 let private node name version deps : PackageNode =
@@ -80,3 +81,53 @@ let ``proposal reason mentions dependency name`` () =
     let g = graph [ node "A" v100 []; node "B" v100 ["A"] ]
     let proposals = CascadeEngine.computeProposals g ["A", ver 1 0 0, ver 2 0 0]
     proposals[0].Reason |> should haveSubstring "A"
+
+// ── suffix preservation and non-cascading roots ───────────────────────────
+
+[<Fact>]
+let ``MINOR root change yields PATCH proposal that keeps beta`` () =
+    // B is 1.2.0-beta. A's minor bump cascades to a patch and must keep beta.
+    let beta = verPre 1 2 0 "beta"
+    let g = graph [ node "A" v100 []; node "B" beta ["A"] ]
+    let proposals = CascadeEngine.computeProposals g ["A", ver 1 0 0, ver 1 1 0]
+    proposals |> List.length |> should equal 1
+    let p = proposals[0]
+    p.PackageName |> should equal "B"
+    p.BumpType |> should equal Patch
+    p.ProposedVersion |> should equal (verPre 1 2 1 "beta")
+
+[<Fact>]
+let ``suffix-only root produces no proposals`` () =
+    // 1.2.0-beta → 1.2.0 changes only the suffix and is not a downgrade.
+    let old = verPre 1 2 0 "beta"
+    let g = graph [ node "A" old []; node "B" v100 ["A"] ]
+    CascadeEngine.computeProposals g ["A", old, ver 1 2 0]
+    |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``earlier numeric release produces no proposals`` () =
+    // 1.2.0 → 1.1.0 is a downgrade and must not cascade.
+    let old = ver 1 2 0
+    let g = graph [ node "A" old []; node "B" v100 ["A"] ]
+    CascadeEngine.computeProposals g ["A", old, ver 1 1 0]
+    |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``earlier suffix release produces no proposals`` () =
+    // 1.2.0 → 1.2.0-beta is a downgrade and must not cascade.
+    let old = ver 1 2 0
+    let beta = verPre 1 2 0 "beta"
+    let g = graph [ node "A" old []; node "B" v100 ["A"] ]
+    CascadeEngine.computeProposals g ["A", old, beta]
+    |> List.isEmpty |> should equal true
+
+[<Fact>]
+let ``two dependency changes: larger numeric trigger wins`` () =
+    // A (MAJOR) and B (MINOR) both affect C; MAJOR→Minor wins over MINOR→Patch.
+    let g = graph [ node "A" v100 []; node "B" v100 []; node "C" v100 ["A";"B"] ]
+    let proposals = CascadeEngine.computeProposals g
+                        ["A", ver 1 0 0, ver 2 0 0
+                         "B", ver 1 0 0, ver 1 1 0]
+    let c = proposals |> List.find (fun p -> p.PackageName = "C")
+    c.BumpType |> should equal Minor
+    c.ProposedVersion |> should equal (ver 1 1 0)
