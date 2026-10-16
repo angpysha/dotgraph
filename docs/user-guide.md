@@ -4,7 +4,37 @@
 
 - .NET 8.0 SDK or later
 - A .NET solution using SDK-style `.csproj` files with `<ProjectReference>` links
-- Each published project must have a `<Version>` tag in its `.csproj`
+- Each published project must expose a version using one of these tag patterns (first match wins):
+  - `<PackageVersion>` or `<Version>` (full semver string, optional `-suffix` in the value)
+  - `<VersionPrefix>` with optional `<VersionSuffix>`
+  - `<PackagePrefix>` with optional `<PackageSuffix>`
+
+When you set a version, dotgraph writes back only to the tag (or prefix/suffix pair) that was read for that project. It does not add a different tag family.
+
+---
+
+## Console review
+
+`update` and `sync` show every change with **prefix**, **suffix**, a **change word**, and a **reason**. An absent pre-release suffix is printed as the word `none`.
+
+Change words are colored in the terminal (Spectre.Console). The word itself carries the meaning when color is stripped (`NO_COLOR`, redirected stdout, or a terminal without ANSI):
+
+| Word | Color | Meaning |
+|------|-------|---------|
+| MAJOR | red | Major numeric bump |
+| MINOR | yellow | Minor numeric bump |
+| PATCH | green | Patch numeric bump |
+| SUFFIX | grey | Suffix-only change (numeric prefix unchanged) |
+| Error | red | Failure |
+| Warning | yellow | Earlier release or other warning |
+
+Example line (colors omitted in this doc):
+
+```text
+  MyLib.Core  prefix 1.2.0 → 2.0.0  suffix none → none  MAJOR  depends on MyLib.Abstractions (MAJOR)
+```
+
+Non-interactive `update` prints a table with columns **Package**, **Current prefix**, **Current suffix**, **Proposed prefix**, **Proposed suffix**, **Change**, and **Reason**. `diff` and cascade previews use the same prefix/suffix layout on each row.
 
 ---
 
@@ -73,7 +103,7 @@ Graph saved to .dotgraph.json (5 packages, 5 edges)
 
 This creates `.dotgraph.json` in your solution root. **Commit this file** to source control.
 
-If any projects are missing a `<Version>` tag, they are listed as warnings and excluded from the graph.
+If a project has no readable version tag (`PackageVersion`, `Version`, `VersionPrefix`, or `PackagePrefix`), it is listed as a warning and excluded from the graph.
 
 ---
 
@@ -119,17 +149,23 @@ dotgraph compares every live `.csproj` version against the `.dotgraph.json` snap
 
 ```
 Changed packages (vs snapshot):
-  MyLib.Core      1.2.0 → 2.0.0   [MAJOR]   ← you edited this
-  MyLib.Caching   1.1.0 → 1.2.0   [MINOR]   ← you edited this too
+  MyLib.Core      prefix 1.2.0 → 2.0.0  suffix none → none  MAJOR  changed vs snapshot
+  MyLib.Caching   prefix 1.1.0 → 1.2.0  suffix none → none  MINOR  changed vs snapshot
 
 Cascade gaps (need version bumps):
-  MyLib.Http      1.5.0 → propose 1.6.0   [MINOR]  depends on MyLib.Core (MAJOR)
-  MyLib.Api       2.0.0 → propose 2.1.0   [MINOR]  depends on MyLib.Http
+  MyLib.Http      prefix 1.5.0 → 1.6.0  suffix none → none  MINOR  depends on MyLib.Core (MAJOR)
+  MyLib.Api       prefix 2.0.0 → 2.1.0  suffix none → none  MINOR  depends on MyLib.Http
 
-Already covered (manually bumped, no action needed):
-  MyLib.Caching   1.1.0 → 1.2.0   [MINOR]  depends on MyLib.Core ✓
+Already covered (no action needed):
+  MyLib.Caching   prefix 1.1.0 → 1.2.0  suffix none → none  MINOR  depends on MyLib.Core
 
 Run 'dotgraph sync' to apply the proposed cascade bumps.
+```
+
+A suffix-only edit (numeric prefix unchanged) shows **SUFFIX** instead of MAJOR/MINOR/PATCH, for example:
+
+```text
+  MyLib.Http  prefix 1.5.0 → 1.5.0  suffix beta → rc.1  SUFFIX  changed vs snapshot
 ```
 
 **Changed packages** — versions you bumped manually since the last snapshot.  
@@ -143,22 +179,22 @@ dotgraph sync
 ```
 
 ```
-  MyLib.Http    1.5.0 → 1.6.0   [MINOR]  depends on MyLib.Core (MAJOR)
-  MyLib.Api     2.0.0 → 2.1.0   [MINOR]  depends on MyLib.Http
+  MyLib.Http  prefix 1.5.0 → 1.6.0  suffix none → none  MINOR  depends on MyLib.Core (MAJOR)
+  MyLib.Api   prefix 2.0.0 → 2.1.0  suffix none → none  MINOR  depends on MyLib.Http
 
-Apply 2 version changes? [Y/n]:
+Apply 2 cascade version change(s)? [Y/n]:
 ```
 
-Press `Y`. dotgraph writes the proposed versions into each `.csproj` and updates `.dotgraph.json`.
+Press `Y`. dotgraph writes only the **cascade** follow-ups into each `.csproj` (your manual root edits are already on disk) and updates `.dotgraph.json`.
 
 ### Options
 
 ```bash
-dotgraph sync --dry-run        # print proposals only, write nothing
-dotgraph sync --interactive    # review and override each proposal one by one
+dotgraph sync --dry-run        # print the diff preview only, write nothing
+dotgraph sync --interactive    # review each cascade proposal one by one
 ```
 
-Interactive mode for `sync` works identically to `update --interactive` — you see each affected package with Accept / Enter manually / Skip choices before the final confirmation.
+With `--interactive`, dotgraph lists root packages you already changed, then one screen per follow-up (`Package N of M`) with **Accept proposed**, **Enter a version**, or **Leave unchanged**. Typed versions must be `MAJOR.MINOR.PATCH` or `MAJOR.MINOR.PATCH-suffix`. A summary groups **Will change** and **Left unchanged**, then asks **Apply these version changes?** — same flow as `update --interactive` (see below). If nothing would be written, you see `Nothing will be written.` with no prompt.
 
 ---
 
@@ -173,15 +209,19 @@ dotgraph update MyLib.Core 1.3.0
 ```
 
 ```
-  MyLib.Core      1.2.0 → 1.3.0   [MINOR]  (explicit)
-  MyLib.Http      1.5.0 → 1.5.1   [PATCH]  depends on MyLib.Core (MINOR bump)
-  MyLib.Caching   1.1.0 → 1.1.1   [PATCH]  depends on MyLib.Core (MINOR bump)
-  MyLib.Api       2.0.0 → 2.0.1   [PATCH]  depends on MyLib.Http, MyLib.Caching
+┌─────────────┬───────────────┬───────────────┬────────────────┬────────────────┬────────┬──────────────────────────────┐
+│ Package     │ Current prefix│ Current suffix│ Proposed prefix│ Proposed suffix│ Change │ Reason                       │
+├─────────────┼───────────────┼───────────────┼────────────────┼────────────────┼────────┼──────────────────────────────┤
+│ MyLib.Core  │ 1.2.0         │ none          │ 1.3.0          │ none           │ MINOR  │ (explicit)                   │
+│ MyLib.Http  │ 1.5.0         │ none          │ 1.5.1          │ none           │ PATCH  │ depends on MyLib.Core (MINOR)│
+│ MyLib.Caching│ 1.1.0        │ none          │ 1.1.1          │ none           │ PATCH  │ depends on MyLib.Core (MINOR)│
+│ MyLib.Api   │ 2.0.0         │ none          │ 2.0.1          │ none           │ PATCH  │ depends on MyLib.Http, ...   │
+└─────────────┴───────────────┴───────────────┴────────────────┴────────────────┴────────┴──────────────────────────────┘
 
-Apply all 4 version changes? [Y/n]:
+Apply all 4 version change(s)? [Y/n]:
 ```
 
-Press `Y`. dotgraph writes `<Version>` into each `.csproj` and updates `.dotgraph.json`.
+Press `Y`. dotgraph writes the new prefix and suffix (or full version string) into each project's winning tag and updates `.dotgraph.json`.
 
 ### Multiple packages at once
 
@@ -191,14 +231,10 @@ Pass several `<package> <version>` pairs. Affected sets are merged — shared de
 dotgraph update MyLib.Core 2.0.0 MyLib.Abstractions 1.1.0
 ```
 
-```
-  MyLib.Abstractions  1.0.0 → 1.1.0   [MINOR]  (explicit)
-  MyLib.Core          1.2.0 → 2.0.0   [MAJOR]  (explicit)
-  MyLib.Http          1.5.0 → 1.6.0   [MINOR]  depends on MyLib.Core (MAJOR)
-  MyLib.Caching       1.1.0 → 1.2.0   [MINOR]  depends on MyLib.Core (MAJOR)
-  MyLib.Api           2.0.0 → 2.1.0   [MINOR]  depends on MyLib.Http, MyLib.Caching
+The proposal table lists both explicit roots and cascade follow-ups with prefix, suffix, change word, and reason — same columns as the single-package example. Shared dependents appear once with the largest applicable bump.
 
-Apply all 5 version changes? [Y/n]:
+```
+Apply all 5 version change(s)? [Y/n]:
 ```
 
 `MyLib.Api` is listed once. Its trigger is MAJOR (from `MyLib.Core`), which outranks the MINOR from `MyLib.Abstractions`.
@@ -214,37 +250,55 @@ Prints the proposal table without writing any files.
 
 ### Interactive mode
 
-Use this when you want to review or override each proposal individually:
+Use this when you want to review or override each follow-up individually:
 
 ```bash
 dotgraph update MyLib.Core 2.0.0 --interactive
 ```
 
 ```
-Root change: MyLib.Core  1.2.0 → 2.0.0  [MAJOR]
+Root changes:
+  MyLib.Core  prefix 1.2.0 → 2.0.0  suffix none → none  MAJOR
 
 ─────────────────────────────────────────────────
-Package:   MyLib.Http
-Current:   1.5.0
-Proposed:  1.6.0  [MINOR]  (depends on MyLib.Core, MAJOR bump)
 
-  [1] Accept proposed  →  1.6.0
-  [2] Enter version manually
-  [3] Skip (leave at 1.5.0)
-> _
+Package 1 of 3
+Current prefix: 1.5.0
+Current suffix: none
+Proposed prefix: 1.6.0
+Proposed suffix: none
+MINOR
+depends on MyLib.Core (MAJOR)
+
+Choose:
+> Accept proposed
+  Enter a version
+  Leave unchanged
 ```
 
-After all choices a summary is shown before the final write:
+- **Accept proposed** — take the cascade suggestion.
+- **Enter a version** — type `1.2.3` or `1.2.3-beta.1`; invalid input shows `Invalid version. Example: 1.2.3 or 1.2.3-beta.1` and asks again on the same package. Typing the current version counts as **Leave unchanged**.
+- **Leave unchanged** — skip this follow-up.
+
+An earlier typed version prints **Warning** with both versions and asks **Apply this earlier version?** unless you passed `--force` on `update`.
+
+After all packages, a summary runs before any write:
 
 ```
-Summary of changes:
-  MyLib.Core      1.2.0 → 2.0.0   [MAJOR]   explicit
-  MyLib.Http      1.5.0 → 1.6.0   [MINOR]   accepted proposal
-  MyLib.Caching   1.1.0 → 1.2.0   [MINOR]   entered manually
-  MyLib.Api       2.0.0 → 2.1.0   [MINOR]   accepted proposal
+Will change
+  MyLib.Core      prefix 1.2.0 → 2.0.0  suffix none → none  MAJOR  (explicit)
+  MyLib.Http      prefix 1.5.0 → 1.6.0  suffix none → none  MINOR  (accepted)
+  MyLib.Caching   prefix 1.1.0 → 1.2.0  suffix none → none  MINOR  (typed)
 
-Apply these 4 changes? [Y/n]:
+Left unchanged
+  MyLib.Api       prefix 2.0.0  suffix none
+
+Apply these version changes? [Y/n]:
 ```
+
+Answering **no** prints `Nothing was written.` Project files and `.dotgraph.json` stay unchanged. If every choice leaves versions as-is, you see `Nothing will be written.` with no confirmation prompt.
+
+Non-interactive downgrades without `--force` print **Warning**, exit code `1`, and write nothing.
 
 ---
 
@@ -349,8 +403,7 @@ Error: Circular dependency detected:
 ### `Version downgrade`
 
 ```
-Warning: MyLib.Core 1.2.0 → 1.1.0 is a downgrade.
-Use --force to apply anyway.
+Warning: MyLib.Core: 1.2.0 → 1.1.0 is a downgrade. Use --force to apply.
 ```
 
 **Fix**: Use `--force` if intentional. Otherwise verify you typed the correct version.
@@ -362,3 +415,4 @@ Use --force to apply anyway.
 - **Commit `.dotgraph.json`** — `git diff .dotgraph.json` gives a clean view of what changed in each release.
 - **Use `--dry-run` in CI** — run `dotgraph analyze` in your build pipeline to detect if any package was bumped without bumping its dependents.
 - **Use `--interactive` for major bumps** — when making breaking changes, interactive mode lets you give each dependent a more meaningful version than the automatic proposal.
+- **Scripts and CI** — set `NO_COLOR=1` or redirect stdout; MAJOR, MINOR, PATCH, and SUFFIX words remain readable without ANSI color.

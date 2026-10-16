@@ -29,6 +29,10 @@ let private applyChanges
     | None ->
         Ok { graph with Packages = updatedPackages; CreatedAt = System.DateTime.UtcNow }
 
+/// Roots are already on disk during sync; summary apply gate counts follow-ups only.
+let private summaryRootsForSync (rootChanges: (string * SemVer * SemVer) list) =
+    rootChanges |> List.map (fun (name, _, current) -> name, current, current)
+
 let run (dryRun: bool) (interactive: bool) =
     let dir = Directory.GetCurrentDirectory()
     match GraphPersistence.load dir with
@@ -44,13 +48,10 @@ let run (dryRun: bool) (interactive: bool) =
                 let diff = DiffEngine.computeDiff snapshot liveVersions
 
                 if diff.Changed.IsEmpty then
-                    Spectre.Console.AnsiConsole.MarkupLine "[grey]No changes detected vs snapshot. Nothing to sync.[/]"
-                    Spectre.Console.AnsiConsole.MarkupLine "[grey]Run 'dotgraph refresh' if you added new projects.[/]"
+                    Output.printDiff diff
                     0
                 elif diff.CascadeGaps.IsEmpty then
                     Output.printDiff diff
-                    Spectre.Console.AnsiConsole.MarkupLine "\n[green]All dependents are already bumped. No cascade gaps.[/]"
-                    Spectre.Console.AnsiConsole.MarkupLine "[grey]Run 'dotgraph refresh' to update the snapshot baseline.[/]"
                     0
                 else
                     let rootChanges =
@@ -59,21 +60,29 @@ let run (dryRun: bool) (interactive: bool) =
 
                     let finalChanges =
                         if interactive then
-                            let decisions = Interactive.run rootChanges proposals
-                            if not (Interactive.confirmSummary rootChanges decisions) then None
-                            else Some decisions
+                            if dryRun then
+                                Output.printDiff diff
+                                None
+                            else
+                                let decisions = Interactive.run rootChanges proposals false
+                                let summaryRoots = summaryRootsForSync rootChanges
+                                if Interactive.confirmSummary summaryRoots proposals decisions then
+                                    Some decisions
+                                else
+                                    None
                         else
                             Output.printDiff diff
                             if dryRun then
-                                Spectre.Console.AnsiConsole.MarkupLine "\n[grey]Dry run — no files changed.[/]"
                                 None
                             else
                                 if Output.confirm $"\nApply {proposals.Length} cascade version change(s)?" then
                                     Some (proposals |> List.map (fun p -> p.PackageName, p.ProposedVersion))
-                                else None
+                                else
+                                    None
 
                     match finalChanges with
                     | None -> 0
+                    | Some [] -> 0
                     | Some changes ->
                         // Apply to graph that already reflects the manually changed root versions.
                         match applyChanges liveGraph changes dir with
