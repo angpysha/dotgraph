@@ -43,6 +43,11 @@ let private applyAll (graph: DependencyGraph) (allChanges: (string * SemVer) lis
     | Some e -> Error e
     | None   -> Ok { graph with Packages = updatedPackages; CreatedAt = System.DateTime.UtcNow }
 
+let private explicitDiffering (graph: DependencyGraph) (pairs: (string * SemVer) list) =
+    pairs
+    |> List.filter (fun (name, newVer) ->
+        SemVer.compare graph.Packages[name].Version newVer <> 0)
+
 let run (args: string[]) (dryRun: bool) (interactive: bool) (force: bool) =
     let dir = Directory.GetCurrentDirectory()
     match GraphPersistence.load dir with
@@ -61,7 +66,7 @@ let run (args: string[]) (dryRun: bool) (interactive: bool) (force: bool) =
                         graph.Packages
                         |> Map.tryFind name
                         |> Option.exists (fun n -> SemVer.isDowngrade n.Version newVer))
-                if downgrades <> [] && not force then
+                if downgrades <> [] && not force && not interactive then
                     for (name, v) in downgrades do
                         let curr = graph.Packages[name].Version
                         Output.warn $"{name}: {SemVer.toString curr} → {SemVer.toString v} is a downgrade. Use --force to apply."
@@ -71,23 +76,30 @@ let run (args: string[]) (dryRun: bool) (interactive: bool) (force: bool) =
                         pairs |> List.map (fun (name, newVer) ->
                             name, graph.Packages[name].Version, newVer)
                     let proposals = CascadeEngine.computeProposals graph rootChanges
+                    let differing = explicitDiffering graph pairs
 
                     let finalChanges =
                         if interactive then
-                            let decisions = Interactive.run rootChanges proposals
-                            if Interactive.confirmSummary rootChanges decisions then
-                                Some (List.append pairs decisions)
-                            else None
+                            if dryRun then
+                                Output.printProposals rootChanges proposals
+                                None
+                            else
+                                let decisions = Interactive.run rootChanges proposals force
+                                if Interactive.confirmSummary rootChanges proposals decisions then
+                                    Some (List.append differing decisions)
+                                else None
                         else
                             Output.printProposals rootChanges proposals
                             if dryRun then
-                                Spectre.Console.AnsiConsole.MarkupLine "\n[grey]Dry run — no files changed.[/]"
                                 None
                             else
-                                let total = pairs.Length + proposals.Length
-                                if Output.confirm $"\nApply all {total} version change(s)?" then
-                                    let cascadeChanges = proposals |> List.map (fun p -> p.PackageName, p.ProposedVersion)
-                                    Some (List.append pairs cascadeChanges)
+                                let cascadeChanges =
+                                    proposals |> List.map (fun p -> p.PackageName, p.ProposedVersion)
+                                let total = differing.Length + cascadeChanges.Length
+                                if total = 0 then
+                                    None
+                                elif Output.confirm $"\nApply all {total} version change(s)?" then
+                                    Some (List.append differing cascadeChanges)
                                 else None
 
                     match finalChanges with

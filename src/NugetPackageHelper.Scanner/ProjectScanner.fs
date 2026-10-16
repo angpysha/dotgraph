@@ -28,25 +28,37 @@ module ProjectScanner =
     let private hasNonEmptyValue (el: XElement) =
         el.Value.Trim().Length > 0
 
+    /// Combine a prefix tag with an optional suffix tag. An empty suffix is treated as absent.
+    let private combinePrefixAndSuffix (prefix: string) (suffix: string option) =
+        let full =
+            match suffix with
+            | Some s when s.Length > 0 -> $"{prefix}-{s}"
+            | _                        -> prefix
+        SemVer.parse full
+
     let private resolveVersion (doc: XDocument) : SemVer option =
         let find tag =
             findElement doc tag
             |> Option.map (fun el -> el.Value.Trim())
             |> Option.filter (fun s -> s.Length > 0)
+        let fromPrefix prefixTag suffixTag =
+            find prefixTag
+            |> Option.bind (fun prefix -> combinePrefixAndSuffix prefix (find suffixTag))
+        // First tag that parses as a numeric version wins. Later tags are left unread.
         find "PackageVersion" |> Option.bind SemVer.parse
         |> Option.orElseWith (fun () -> find "Version" |> Option.bind SemVer.parse)
-        |> Option.orElseWith (fun () ->
-            find "VersionPrefix"
-            |> Option.bind (fun prefix ->
-                let full =
-                    match find "VersionSuffix" with
-                    | Some s when s.Length > 0 -> $"{prefix}-{s}"
-                    | _                        -> prefix
-                SemVer.parse full))
+        |> Option.orElseWith (fun () -> fromPrefix "VersionPrefix" "VersionSuffix")
+        |> Option.orElseWith (fun () -> fromPrefix "PackagePrefix" "PackageSuffix")
 
     type private VersionWriteTarget =
         | SingleTag of XElement
-        | PrefixSuffixTags of XElement * XElement option
+        | PrefixSuffixTags of prefixEl: XElement * suffixEl: XElement option * suffixTag: string
+
+    let private resolvePrefixSuffixTarget (doc: XDocument) prefixTag suffixTag =
+        findElement doc prefixTag
+        |> Option.filter hasNonEmptyValue
+        |> Option.map (fun prefixEl ->
+            PrefixSuffixTags (prefixEl, findElement doc suffixTag, suffixTag))
 
     let private resolveVersionWriteTarget (doc: XDocument) : VersionWriteTarget option =
         findElement doc "PackageVersion"
@@ -56,15 +68,14 @@ module ProjectScanner =
             findElement doc "Version"
             |> Option.filter hasNonEmptyValue
             |> Option.map SingleTag)
-        |> Option.orElseWith (fun () ->
-            findElement doc "VersionPrefix"
-            |> Option.filter hasNonEmptyValue
-            |> Option.map (fun prefixEl ->
-                PrefixSuffixTags (prefixEl, findElement doc "VersionSuffix")))
+        |> Option.orElseWith (fun () -> resolvePrefixSuffixTarget doc "VersionPrefix" "VersionSuffix")
+        |> Option.orElseWith (fun () -> resolvePrefixSuffixTarget doc "PackagePrefix" "PackageSuffix")
 
-    /// Write a version back to the same tag(s) used when reading (PackageVersion, Version, or VersionPrefix/VersionSuffix).
+    /// Write a version back to the winning tag only
+    /// (PackageVersion, Version, VersionPrefix/VersionSuffix, or PackagePrefix/PackageSuffix).
+    /// A missing suffix element is created beside the winning prefix tag when the new version has a suffix.
     let writeVersion (projectPath: string) (version: SemVer) : Result<unit, string> =
-        let writePrefixSuffix (prefixEl: XElement) (suffixEl: XElement option) =
+        let writePrefixSuffix (prefixEl: XElement) (suffixEl: XElement option) (suffixTag: string) =
             prefixEl.Value <- $"{version.Major}.{version.Minor}.{version.Patch}"
             match version.PreRelease with
             | None ->
@@ -73,16 +84,16 @@ module ProjectScanner =
                 match suffixEl with
                 | Some el -> el.Value <- pre
                 | None ->
-                    let suffix = XElement(XName.Get "VersionSuffix", pre)
+                    let suffix = XElement(XName.Get suffixTag, pre)
                     prefixEl.AddAfterSelf suffix
 
         try
             let doc = XDocument.Load projectPath
             match resolveVersionWriteTarget doc with
             | None ->
-                Error $"No <PackageVersion>, <Version>, or <VersionPrefix> element in {projectPath}"
-            | Some (PrefixSuffixTags (prefixEl, suffixEl)) ->
-                writePrefixSuffix prefixEl suffixEl
+                Error $"No <PackageVersion>, <Version>, <VersionPrefix>, or <PackagePrefix> element in {projectPath}"
+            | Some (PrefixSuffixTags (prefixEl, suffixEl, suffixTag)) ->
+                writePrefixSuffix prefixEl suffixEl suffixTag
                 doc.Save projectPath
                 Ok ()
             | Some (SingleTag el) ->
@@ -101,7 +112,7 @@ module ProjectScanner =
             let version = resolveVersion doc
 
             if version.IsNone then
-                warnings.Add $"  ⚠  {name}: no <PackageVersion>, <Version>, or <VersionPrefix> tag — excluded from graph"
+                warnings.Add $"  ⚠  {name}: no <PackageVersion>, <Version>, <VersionPrefix>, or <PackagePrefix> tag — excluded from graph"
 
             let dir = Path.GetDirectoryName projPath
             let refs =
@@ -124,7 +135,7 @@ module ProjectScanner =
             Error $"Failed to parse '{projPath}': {ex.Message}"
 
     /// Scan all projects and build a DependencyGraph.
-    /// Projects without a <PackageVersion>, <Version>, or <VersionPrefix> tag are excluded from the graph.
+    /// Projects without a <PackageVersion>, <Version>, <VersionPrefix>, or <PackagePrefix> tag are excluded from the graph.
     let buildGraph (solutionPath: string) (projectPaths: string list) : Result<DependencyGraph * string list, string> =
         let results = projectPaths |> List.map (fun p -> scanProject p)
 

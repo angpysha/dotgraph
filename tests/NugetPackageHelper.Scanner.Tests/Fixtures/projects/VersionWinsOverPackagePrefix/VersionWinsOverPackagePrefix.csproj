@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Version>2.5.0</Version>
+    <PackagePrefix>1.0.0</PackagePrefix>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+</Project>
