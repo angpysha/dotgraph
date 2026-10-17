@@ -120,6 +120,115 @@ let run
 
     decisions |> Seq.toList
 
+/// Branch review. Leave unchanged is focused first. Later rows are rebuilt after each answer.
+/// Returns versions that differ from live after the developer confirms. Writes nothing itself.
+let runBranchReview
+    (graph: DependencyGraph)
+    (xml: Map<string, BranchProposal.PackageXml>)
+    (snapshotNames: string list)
+    (changes: BranchProposal.ChangedPath list)
+    (force: bool)
+    : (string * SemVer) list =
+
+    let leaveChoice = "Leave unchanged"
+    let acceptChoice = "Accept proposed"
+    let enterChoice = "Enter a version"
+
+    let printRow (index: int) (total: int) (row: BranchProposal.ReviewRow) =
+        AnsiConsole.Write(Rule())
+        AnsiConsole.MarkupLine $"\n[bold]Package {index} of {total}[/]"
+        let branchText =
+            match row.BranchVersion with
+            | Some version -> SemVer.toString version
+            | None -> "(none)"
+        AnsiConsole.MarkupLine $"Compare branch: {Markup.Escape branchText}"
+        AnsiConsole.MarkupLine $"Current: {Markup.Escape (SemVer.toString row.LiveVersion)}"
+        AnsiConsole.MarkupLine $"Proposed: {Markup.Escape (SemVer.toString row.ProposedVersion)}"
+        AnsiConsole.MarkupLine(Output.markup (Output.ReviewLabel.Bump row.BumpType))
+        AnsiConsole.MarkupLine $"[grey]{Markup.Escape row.Reason}[/]"
+        if row.AlreadyCurrent then
+            AnsiConsole.MarkupLine "[grey]already current[/]"
+
+    let rec askChoice (row: BranchProposal.ReviewRow) : BranchProposal.ReviewChoice =
+        let choice =
+            AnsiConsole.Prompt(
+                SelectionPrompt<string>()
+                    .Title("Choose:")
+                    .AddChoices([| leaveChoice; acceptChoice; enterChoice |]))
+        if choice = leaveChoice then
+            BranchProposal.ReviewChoice.LeaveUnchanged
+        elif choice = acceptChoice then
+            confirmChosen row row.ProposedVersion BranchProposal.ReviewChoice.AcceptProposed
+        else
+            askTyped row
+
+    and confirmChosen
+        (row: BranchProposal.ReviewRow)
+        (version: SemVer)
+        (accepted: BranchProposal.ReviewChoice)
+        : BranchProposal.ReviewChoice =
+        if not force && SemVer.isDowngrade row.LiveVersion version then
+            Output.warn $"{SemVer.toString row.LiveVersion} → {SemVer.toString version}"
+            if Output.confirm "Apply this earlier version?" then accepted
+            else askChoice row
+        else
+            accepted
+
+    and askTyped (row: BranchProposal.ReviewRow) : BranchProposal.ReviewChoice =
+        let input = AnsiConsole.Ask<string>("[grey]Version:[/]")
+        match SemVer.parse input with
+        | None ->
+            Output.error "Invalid version. Example: 1.2.3 or 1.2.3-beta.1"
+            askTyped row
+        | Some version when SemVer.compare version row.LiveVersion = 0 ->
+            BranchProposal.ReviewChoice.LeaveUnchanged
+        | Some version ->
+            confirmChosen row version (BranchProposal.ReviewChoice.Entered version)
+
+    let rec answer (decisions: Map<string, BranchProposal.ReviewChoice>) (answered: Set<string>) =
+        let rows = BranchProposal.reviewRows graph xml snapshotNames changes decisions
+        match rows |> List.tryFind (fun row -> not (Set.contains row.Name answered)) with
+        | None -> rows, decisions
+        | Some row ->
+            let index = rows |> List.findIndex (fun item -> item.Name = row.Name)
+            printRow (index + 1) rows.Length row
+            let choice = askChoice row
+            answer (Map.add row.Name choice decisions) (Set.add row.Name answered)
+
+    try
+        AnsiConsole.WriteLine $"Compare branch: {graph.CompareBranch}"
+        let rows, decisions = answer Map.empty Set.empty
+        let changing =
+            rows
+            |> List.choose (fun row ->
+                if SemVer.compare row.LiveVersion row.ProposedVersion = 0 then None
+                else Some row)
+        let unchanged =
+            rows
+            |> List.filter (fun row -> SemVer.compare row.LiveVersion row.ProposedVersion = 0)
+
+        AnsiConsole.Write(Rule())
+        AnsiConsole.MarkupLine "\n[bold]Will change[/]"
+        for row in changing do
+            printVersionChange row.Name row.LiveVersion row.ProposedVersion (Some row.BumpType) ""
+
+        AnsiConsole.MarkupLine "\n[bold]Left unchanged[/]"
+        for row in unchanged do
+            printVersionStay row.Name row.LiveVersion
+
+        if List.isEmpty changing then
+            AnsiConsole.WriteLine "Nothing will be written."
+            []
+        elif Output.confirm "\nApply these version changes?" then
+            changing |> List.map (fun row -> row.Name, row.ProposedVersion)
+        else
+            AnsiConsole.WriteLine "Nothing will be written."
+            []
+    with
+    | :? System.OperationCanceledException ->
+        AnsiConsole.WriteLine "Nothing will be written."
+        []
+
 /// Group explicit roots, accepted proposals, and typed versions.
 /// Returns false without asking when nothing will change.
 let confirmSummary

@@ -12,6 +12,7 @@
     <Compile Include="CascadeEngineTests.fs" />
     <Compile Include="DiffEngineTests.fs" />
     <Compile Include="GraphPersistenceTests.fs" />
+    <Compile Include="BranchProposalTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

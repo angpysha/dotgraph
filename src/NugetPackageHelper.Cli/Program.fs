@@ -1,5 +1,6 @@
 module NugetPackageHelper.Cli.Program
 
+open System
 open System.CommandLine
 open NugetPackageHelper.Cli.Commands
 
@@ -72,6 +73,36 @@ let main argv =
         let force = result.GetValue forceOpt
         Update.run args dry inter force |> ignore)
 
+    // ── propose ────────────────────────────────────────────────────────────
+    let proposeDryOpt = Option<bool>("--dry-run")
+    proposeDryOpt.Description <- "Print the branch proposal without writing files"
+    let proposeForceOpt = Option<bool>("--force")
+    proposeForceOpt.Description <- "Accept earlier releases without an extra question"
+    let proposeCmd = Command("propose", "Propose patches from code changes against the compare branch")
+    proposeCmd.Add proposeDryOpt
+    proposeCmd.Add proposeForceOpt
+    proposeCmd.SetAction(Func<ParseResult, int>(fun result ->
+        Propose.run (result.GetValue proposeDryOpt) (result.GetValue proposeForceOpt)))
+
+    // ── review ─────────────────────────────────────────────────────────────
+    let reviewForceOpt = Option<bool>("--force")
+    reviewForceOpt.Description <- "Accept earlier releases without an extra question"
+    let reviewCmd = Command("review", "Review branch proposals without writing unless you confirm")
+    reviewCmd.Add reviewForceOpt
+    reviewCmd.SetAction(Func<ParseResult, int>(fun result ->
+        Review.run (result.GetValue reviewForceOpt)))
+
+    // ── compare-branch ─────────────────────────────────────────────────────
+    let compareArg = Argument<string>("name")
+    compareArg.Description <- "Branch name to store. Omit to print the saved name."
+    compareArg.Arity <- ArgumentArity.ZeroOrOne
+    let compareCmd = Command("compare-branch", "Print or set the branch used for version proposals")
+    compareCmd.Add compareArg
+    compareCmd.SetAction(Func<ParseResult, int>(fun result ->
+        let raw = result.GetValue compareArg
+        let name = if isNull raw then None else Some raw
+        CompareBranch.run name))
+
     // ── root ───────────────────────────────────────────────────────────────
     let root = RootCommand("dotgraph — .NET Package Dependency Graph Tool")
     root.Add initCmd
@@ -80,5 +111,8 @@ let main argv =
     root.Add diffCmd
     root.Add syncCmd
     root.Add updateCmd
+    root.Add proposeCmd
+    root.Add reviewCmd
+    root.Add compareCmd
 
     root.Parse(argv).Invoke()

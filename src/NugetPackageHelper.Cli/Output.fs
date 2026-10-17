@@ -136,3 +136,41 @@ let printDiff (diff: SnapshotDiff) =
 
 let confirm (msg: string) : bool =
     AnsiConsole.Confirm msg
+
+/// Branch proposal report. The change word stays visible when color is stripped.
+let printBranchReport (branchName: string) (report: BranchProposal.BranchReport) =
+    AnsiConsole.WriteLine $"Compare branch: {branchName}"
+    AnsiConsole.MarkupLine "\n[bold]Selected:[/]"
+    if report.Selected.IsEmpty then
+        AnsiConsole.MarkupLine "  [grey](none)[/]"
+    else
+        for item in report.Selected do
+            let branchText =
+                match item.BranchVersion with
+                | Some version -> SemVer.toString version
+                | None -> "(none)"
+            let currentText =
+                match item.BranchVersion with
+                | Some branch when SemVer.compare branch item.LiveVersion = 0 -> ""
+                | _ -> $"   current {SemVer.toString item.LiveVersion}"
+            let already = if item.AlreadyCurrent then "   already current" else ""
+            AnsiConsole.MarkupLine(
+                $"  [bold]{Markup.Escape item.Name}[/]   " +
+                $"branch {Markup.Escape branchText}{Markup.Escape currentText}   " +
+                $"→ {Markup.Escape (SemVer.toString item.ProposedVersion)}   " +
+                $"{markup (ReviewLabel.Bump item.BumpType)}   " +
+                $"{Markup.Escape item.Reason}{Markup.Escape already}")
+
+    if report.FollowUps <> [] then
+        AnsiConsole.MarkupLine "\n[bold]Follow-ups:[/]"
+        for proposal in report.FollowUps do
+            AnsiConsole.MarkupLine(
+                $"  [bold]{Markup.Escape proposal.PackageName}[/]   " +
+                $"{Markup.Escape (SemVer.toString proposal.CurrentVersion)} → {Markup.Escape (SemVer.toString proposal.ProposedVersion)}   " +
+                $"{markup (ReviewLabel.Bump proposal.BumpType)}   " +
+                $"{Markup.Escape proposal.Reason}")
+
+    if report.Warnings <> [] then
+        AnsiConsole.MarkupLine "\n[bold]Warnings:[/]"
+        for warning in report.Warnings do
+            warn $"{warning.Name}   {warning.Detail}"

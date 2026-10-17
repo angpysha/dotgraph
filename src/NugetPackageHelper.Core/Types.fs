@@ -19,6 +19,8 @@ type PackageNode = {
 type DependencyGraph = {
     SolutionPath: string
     CreatedAt: System.DateTime
+    /// Branch name stored in .dotgraph.json. Missing JSON means main.
+    CompareBranch: string
     Packages: Map<string, PackageNode>
 }
 
