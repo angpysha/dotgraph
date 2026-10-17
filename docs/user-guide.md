@@ -354,14 +354,58 @@ Either approach merges the affected sets correctly so each dependent is bumped e
 
 ---
 
+## Step 6 — Propose versions from a branch diff
+
+dotgraph can compare your current files with a saved branch and propose one patch above the version stored on that branch. The `git` executable is not required. The tool reads the repository itself.
+
+The saved name lives in `.dotgraph.json` as `compareBranch`. If that property has never been stored, the name is `main`.
+
+```bash
+dotgraph compare-branch          # print the saved name (main when it was never stored)
+dotgraph compare-branch release/1.4
+```
+
+Setting a name does not check that the branch exists and does not rescan packages. An empty name is rejected and the file is left unchanged. A missing snapshot still tells you to run `dotgraph init` first.
+
+Preview the proposal without writing:
+
+```bash
+dotgraph propose --dry-run
+```
+
+Selected packages show the compare-branch version, the current version when it differs, the proposed version, a change word (MAJOR, MINOR, PATCH, or SUFFIX), and a reason (`code changed` or `new package`). A package already at the proposal is marked already current. Follow-ups are the usual cascade from each dependent's live version. Removed packages and packages with no numeric version on the branch are warnings.
+
+```text
+Compare branch: main
+
+Selected:
+  MyLib.Core     branch 1.4.2   current 9.0.0   → 1.4.3   PATCH   code changed
+
+Follow-ups:
+  MyLib.Http     3.0.0 → 3.0.1   PATCH   depends on MyLib.Core (PATCH bump)
+```
+
+`dotgraph propose` prints that report, then asks before it writes. An earlier release (the proposed version is below the live version) asks once per package unless you pass `--force`. Answering no drops only that package. If nothing remains, you see `Nothing will be written.` and no files change. Otherwise one yes/no applies the remaining set. After a yes, project files are updated and `.dotgraph.json` is rescanned so versions and dependency links match the solution. The saved branch name is kept.
+
+`dotgraph review` walks only that selected set and its follow-ups. It is separate from `update --interactive` and `sync --interactive`. Those reviews are unchanged and still focus **Accept proposed** first. In `review`, **Leave unchanged** is focused first, then **Accept proposed**, then **Enter a version**. A package is shown only after selected dependencies that are also in the review. Later proposals are recalculated after you accept or type a version. Leaving a package unchanged while it is still at the branch version does not bump its dependents. A package already at the proposed patch still feeds that patch and is not written again.
+
+The summary groups **Will change** and **Left unchanged**. Nothing is written unless **Will change** is non-empty and you confirm. Quitting, declining, or leaving every package unchanged prints `Nothing will be written.`
+
+```bash
+dotgraph review
+dotgraph review --force
+```
+
+---
+
 ## Flags Reference
 
 | Flag | Commands | Description |
 |---|---|---|
-| `--dry-run` | `update`, `sync` | Print proposals only, write nothing |
+| `--dry-run` | `update`, `sync`, `propose` | Print proposals only, write nothing |
 | `--interactive` | `update`, `sync` | Walk through each proposal interactively |
-| `--force` | `update` | Allow version downgrades |
-| `--solution <path>` | all | Specify solution file when multiple `.sln`/`.slnx` exist |
+| `--force` | `update`, `propose`, `review` | Accept an earlier release without the extra question |
+| `--solution <path>` | `init`, `refresh` | Specify solution file when multiple `.sln`/`.slnx` exist |
 
 ---
 
