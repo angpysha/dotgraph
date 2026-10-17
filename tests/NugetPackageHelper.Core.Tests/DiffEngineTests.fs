@@ -14,6 +14,7 @@ let private node name version deps : PackageNode =
 let private graph nodes : DependencyGraph =
     { SolutionPath="/fake/sol.slnx"
       CreatedAt=System.DateTime.UtcNow
+      CompareBranch="main"
       Packages = nodes |> List.map (fun n -> n.Name, n) |> Map.ofList }
 
 // ── no changes ────────────────────────────────────────────────────────────

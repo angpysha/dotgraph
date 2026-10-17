@@ -8,10 +8,15 @@
   <ItemGroup>
     <Compile Include="SolutionScanner.fs" />
     <Compile Include="ProjectScanner.fs" />
+    <Compile Include="GitWorktree.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NugetPackageHelper.Core\NugetPackageHelper.Core.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
   </ItemGroup>
 
 </Project>

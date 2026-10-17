@@ -50,6 +50,13 @@ module ProjectScanner =
         |> Option.orElseWith (fun () -> fromPrefix "VersionPrefix" "VersionSuffix")
         |> Option.orElseWith (fun () -> fromPrefix "PackagePrefix" "PackageSuffix")
 
+    /// Parse a version from project XML text using the same tag order as a live project file.
+    let versionFromXml (xml: string) : SemVer option =
+        try
+            resolveVersion (XDocument.Parse xml)
+        with _ ->
+            None
+
     type private VersionWriteTarget =
         | SingleTag of XElement
         | PrefixSuffixTags of prefixEl: XElement * suffixEl: XElement option * suffixTag: string
@@ -158,8 +165,9 @@ module ProjectScanner =
 
             let packages = remapped |> List.map (fun n -> n.Name, n) |> Map.ofList
             let graph = {
-                SolutionPath = solutionPath
-                CreatedAt    = System.DateTime.UtcNow
-                Packages     = packages
+                SolutionPath  = solutionPath
+                CreatedAt     = System.DateTime.UtcNow
+                CompareBranch = "main"
+                Packages      = packages
             }
             Ok (graph, warnings)

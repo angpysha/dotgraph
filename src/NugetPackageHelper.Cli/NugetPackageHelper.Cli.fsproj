@@ -10,7 +10,7 @@
     <PackageId>dotgraph</PackageId>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dotgraph</ToolCommandName>
-    <Version>0.3.2</Version>
+    <Version>0.4.0</Version>
     <Authors>angpysha</Authors>
     <Description>CLI tool that detects and cascades version bumps across internally published NuGet packages in a .NET solution.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -29,6 +29,9 @@
     <Compile Include="Commands/Diff.fs" />
     <Compile Include="Commands/Sync.fs" />
     <Compile Include="Commands/Update.fs" />
+    <Compile Include="Commands/Propose.fs" />
+    <Compile Include="Commands/Review.fs" />
+    <Compile Include="Commands/CompareBranch.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

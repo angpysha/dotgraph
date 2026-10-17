@@ -10,6 +10,7 @@
     <Compile Include="SemVer.fs" />
     <Compile Include="Graph.fs" />
     <Compile Include="CascadeEngine.fs" />
+    <Compile Include="BranchProposal.fs" />
     <Compile Include="DiffEngine.fs" />
     <Compile Include="GraphPersistence.fs" />
   </ItemGroup>

@@ -17,8 +17,12 @@ module GraphPersistence =
 
     let private toJson (graph: DependencyGraph) (baseDir: string) : string =
         let root = JsonObject()
+        let compareBranch =
+            if System.String.IsNullOrWhiteSpace graph.CompareBranch then "main"
+            else graph.CompareBranch.Trim()
         root["solutionPath"] <- JsonValue.Create(Path.GetRelativePath(baseDir, graph.SolutionPath)) :> JsonNode
         root["createdAt"]    <- JsonValue.Create(graph.CreatedAt.ToUniversalTime().ToString("o")) :> JsonNode
+        root["compareBranch"] <- JsonValue.Create(compareBranch) :> JsonNode
 
         let pkgs = JsonObject()
         for (name, node) in graph.Packages |> Map.toSeq do
@@ -38,6 +42,13 @@ module GraphPersistence =
             let root = JsonNode.Parse json :?> JsonObject
             let slnRel    = root["solutionPath"].GetValue<string>()
             let createdAt = DateTime.Parse(root["createdAt"].GetValue<string>()).ToUniversalTime()
+            // A missing or blank property stays main and does not rewrite the file.
+            let compareBranch =
+                match root["compareBranch"] with
+                | null -> "main"
+                | node ->
+                    let raw = node.GetValue<string>()
+                    if System.String.IsNullOrWhiteSpace raw then "main" else raw.Trim()
             let pkgsNode  = root["packages"] :?> JsonObject
 
             let packages =
@@ -59,9 +70,10 @@ module GraphPersistence =
                 |> Map.ofSeq
 
             Ok {
-                SolutionPath = Path.GetFullPath(Path.Combine(baseDir, slnRel))
-                CreatedAt    = createdAt
-                Packages     = packages
+                SolutionPath  = Path.GetFullPath(Path.Combine(baseDir, slnRel))
+                CreatedAt     = createdAt
+                CompareBranch = compareBranch
+                Packages      = packages
             }
         with ex ->
             Error $"Failed to parse {fileName}: {ex.Message}"
