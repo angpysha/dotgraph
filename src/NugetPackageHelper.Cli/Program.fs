@@ -103,6 +103,26 @@ let main argv =
         let name = if isNull raw then None else Some raw
         CompareBranch.run name))
 
+    // ── props-path ─────────────────────────────────────────────────────────
+    let propsPathArg = Argument<string>("path")
+    propsPathArg.Description <- "Path to the props file. Omit to print the saved path."
+    propsPathArg.Arity <- ArgumentArity.ZeroOrOne
+    let propsClearOpt = Option<bool>("--clear")
+    propsClearOpt.Description <- "Remove the saved props path"
+    let propsPathCmd = Command("props-path", "Print or set the props file path for package versions")
+    propsPathCmd.Add propsPathArg
+    propsPathCmd.Add propsClearOpt
+    propsPathCmd.SetAction(Func<ParseResult, int>(fun result ->
+        let raw = result.GetValue propsPathArg
+        let path = if isNull raw then None else Some raw
+        let clear = result.GetValue propsClearOpt
+        PropsPath.run path clear))
+
+    // ── export-props ───────────────────────────────────────────────────────
+    let exportPropsCmd = Command("export-props", "Write saved package versions to the configured props file")
+    exportPropsCmd.SetAction(Func<ParseResult, int>(fun _ ->
+        ExportProps.run ()))
+
     // ── root ───────────────────────────────────────────────────────────────
     let root = RootCommand("dotgraph — .NET Package Dependency Graph Tool")
     root.Add initCmd
@@ -114,5 +134,7 @@ let main argv =
     root.Add proposeCmd
     root.Add reviewCmd
     root.Add compareCmd
+    root.Add propsPathCmd
+    root.Add exportPropsCmd
 
     root.Parse(argv).Invoke()

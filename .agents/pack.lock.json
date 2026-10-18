@@ -1,0 +1,23 @@
+{
+  "catalog_version": "0.9.0",
+  "applied_at": "2026-08-30T20:47:20Z",
+  "packs": [
+    {
+      "name": "dotnet-minimal",
+      "features": [],
+      "skills": [
+        "dotnet-format",
+        "dotnet-unit-tests",
+        "dotnet-dotgraph"
+      ],
+      "rules": [
+        "dotnet-code-style",
+        "minimal-api-migration"
+      ],
+      "overlays": [
+        "developer"
+      ]
+    }
+  ],
+  "hashes": {}
+}

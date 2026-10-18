@@ -1,0 +1,13 @@
+# >>> editorconfig-install:typescript
+[*.{js,jsx,mjs,cjs}]
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+[*.{ts,tsx,mts,cts}]
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+
+# Prettier/eslint may override quote/style rules — EditorConfig sets editor baseline.
+# <<< editorconfig-install:typescript

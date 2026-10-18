@@ -1,0 +1,32 @@
+# >>> editorconfig-install:csharp
+[*.cs]
+indent_size = 4
+tab_width = 4
+
+# .NET code style (dotnet format / analyzers)
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_members_in_anonymous_types = true
+
+csharp_style_namespace_declarations = file_scoped:preferred
+csharp_style_prefer_braces = true:suggestion
+csharp_style_expression_bodied_methods = false:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_prefer_simple_default_expression = true:suggestion
+
+# Nullable / modern C#
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_predefined_type_for_locals_parameters_members = true:suggestion
+dotnet_style_predefined_type_for_member_access = true:suggestion
+
+[*.{csx,vb}]
+indent_size = 4
+# <<< editorconfig-install:csharp

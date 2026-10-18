@@ -13,6 +13,7 @@
     <Compile Include="BranchProposal.fs" />
     <Compile Include="DiffEngine.fs" />
     <Compile Include="GraphPersistence.fs" />
+    <Compile Include="PropsExport.fs" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,43 @@
+---
+description: Spec-Driven Development via GitHub Spec Kit — every phase drives the matching /speckit command
+alwaysApply: true
+---
+
+# Spec Kit — Spec-Driven Development backbone
+
+This project uses **GitHub Spec Kit** (<https://github.github.com/spec-kit/>) as the SDD
+backbone. All agents and subagents use it. Full playbook: `skills/spec-kit/SKILL.md`.
+
+## Golden rule
+
+If a phase has a matching `/speckit.*` command, **run that command** and treat its artifact
+(`spec.md` / `plan.md` / `tasks.md` / constitution) as **canonical**. SDLC docs
+(REQ/SDD/TDD/TEST, ADRs, API contracts) **supplement and reference** Spec Kit artifacts —
+never contradict them.
+
+## Command map
+
+| Phase | Command |
+|-------|---------|
+| adapt / intake | `/speckit.constitution` |
+| Intake / Requirements | `/speckit.specify` |
+| Business grilling | `/speckit.clarify` |
+| Design | `/speckit.plan` (+ `/speckit.checklist`) |
+| Planning | `/speckit.tasks` → `/speckit.analyze` → `/speckit.taskstoissues` |
+| Implementation | `/speckit.implement` |
+| Convergence | `/speckit.converge` (loop to implement until converged) |
+
+## Install & init
+
+- Install: `uv tool install specify-cli --from git+https://github.com/github/spec-kit.git`
+- Per repo (after `agentic-tool install --host cursor`): `specify init . --integration cursor`
+- Manifest flag: `spec_kit.enabled`. Artifacts in `.specify/` and `specs/NNN-slug/`.
+
+## Rules
+
+- `/speckit.analyze` (and `/speckit.checklist`) run **before** the matching pipeline gate; a
+  gate never passes on a red analyze.
+- Feature context is keyed to the git branch (`NNN-slug`).
+- If Spec Kit is unavailable, state **SPEC-KIT DEGRADED** and fall back to hand-written SDLC
+  docs under the session folder, keeping the same gates.
+- No secrets in spec/plan/tasks/constitution.

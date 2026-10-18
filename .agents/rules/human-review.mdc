@@ -1,0 +1,27 @@
+---
+description: Mandatory human review of all agent-produced changes (core engineering principle)
+alwaysApply: true
+---
+
+# Human Review Is Mandatory
+
+A human reviews every change before it is accepted. This is what separates agentic engineering from vibe coding: the agent proposes, the human disposes.
+
+## Rules
+
+- Present changes for review and **wait for explicit human approval** before treating work as done.
+- Never auto-merge, auto-commit, or push unless the human explicitly asks in that message.
+- Work in **small, reviewable units** — one `br` task / one logical change at a time. Avoid large unreviewable batches.
+- Make each step easy to review: clear diffs, a short summary of what changed and why, and how it was verified (gate output, tests).
+- Surface assumptions, trade-offs, and risks instead of silently deciding. Ask when a choice is significant or destructive.
+- Gate scripts and tests passing are **necessary but not sufficient** — they support human review, they do not replace it.
+
+## In the SDLC pipeline
+
+Each phase ends with a human review checkpoint:
+
+```
+agent produces artifact/code -> gate script passes -> HUMAN REVIEW -> advance
+```
+
+Do not advance to the next phase or close a `br` issue until the human has reviewed and approved.

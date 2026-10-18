@@ -1,0 +1,10 @@
+# >>> editorconfig-install:html
+[*.{html,htm}]
+indent_size = 2
+tab_width = 2
+max_line_length = 120
+
+# Angular component templates
+[*.component.html]
+indent_size = 2
+# <<< editorconfig-install:html

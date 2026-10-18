@@ -192,7 +192,10 @@ let applyConfirmed (context: ProposalContext) (changes: (string * SemVer) list) 
                         Output.error $"Circular dependency detected: {cycle |> String.concat arrow}"
                         1
                     | None ->
-                        let refreshed = { fresh with CompareBranch = context.Snapshot.CompareBranch }
+                        let refreshed =
+                            { fresh with
+                                CompareBranch = context.Snapshot.CompareBranch
+                                PropsPath = context.Snapshot.PropsPath }
                         match GraphPersistence.save refreshed context.Directory with
                         | Error message -> Output.error message; 1
                         | Ok () ->

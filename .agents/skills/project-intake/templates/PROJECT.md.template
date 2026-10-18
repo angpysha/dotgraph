@@ -1,0 +1,25 @@
+# {ProjectName}
+
+> Living project brief. Created during `.agents adapt` on a greenfield repo.
+> Edit anytime — re-run `Run .agents adapt --update` to refresh pack/agent recommendations.
+
+## Vision
+
+<!-- Main idea: who is this for, what problem does it solve, what does success look like? -->
+
+## Stack
+
+<!-- Preferred languages, frameworks, platforms, data stores, CI/CD. Example:
+- Language: Swift 6
+- UI: SwiftUI (iOS 18+)
+- Dependencies: Swift Package Manager
+- CI/CD: Azure DevOps (self-hosted Mac)
+-->
+
+## Delivery (optional)
+
+<!-- Tracker (beads / GitHub issues), PR provider, default lane, hosting. Filled during adapt if unknown. -->
+
+## Open questions (optional)
+
+<!-- Decisions still to make — architect/BA can resolve in Phase 1–2. -->

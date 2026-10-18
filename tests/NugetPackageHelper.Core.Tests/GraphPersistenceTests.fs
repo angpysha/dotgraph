@@ -14,6 +14,7 @@ let private makeGraph nodes =
     { SolutionPath  = Path.Combine("/fake", "sol.slnx")
       CreatedAt     = System.DateTime(2025, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)
       CompareBranch = "main"
+      PropsPath     = None
       Packages      = nodes |> List.map (fun n -> n.Name, n) |> Map.ofList }
 
 // ── round-trip ────────────────────────────────────────────────────────────
@@ -148,5 +149,78 @@ let ``later save of package versions still writes compareBranch`` () =
         let json = File.ReadAllText(Path.Combine(dir, ".dotgraph.json"))
         json |> should haveSubstring "develop"
         json |> should haveSubstring "1.0.1"
+    finally
+        Directory.Delete(dir, recursive=true)
+
+// ── props path ────────────────────────────────────────────────────────────
+
+[<Fact>]
+let ``missing propsPath loads as unset and does not rewrite the file`` () =
+    let dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())
+    Directory.CreateDirectory dir |> ignore
+    try
+        let json =
+            """{
+  "solutionPath": "sol.slnx",
+  "createdAt": "2025-01-01T00:00:00.0000000Z",
+  "compareBranch": "main",
+  "packages": {}
+}"""
+        let path = Path.Combine(dir, ".dotgraph.json")
+        File.WriteAllText(path, json)
+
+        match GraphPersistence.load dir with
+        | Error e -> failwith e
+        | Ok g -> g.PropsPath |> should equal None
+
+        let after = File.ReadAllText path
+        after |> should not' (haveSubstring "propsPath")
+    finally
+        Directory.Delete(dir, recursive=true)
+
+[<Fact>]
+let ``saved propsPath round-trips relative path unchanged`` () =
+    let dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())
+    Directory.CreateDirectory dir |> ignore
+    try
+        let original =
+            { makeGraph [] with PropsPath = Some "build/PackageVersions.props" }
+        GraphPersistence.save original dir |> Result.isOk |> should equal true
+
+        match GraphPersistence.load dir with
+        | Error e -> failwith e
+        | Ok g -> g.PropsPath |> should equal (Some "build/PackageVersions.props")
+
+        let json = File.ReadAllText(Path.Combine(dir, ".dotgraph.json"))
+        json |> should haveSubstring "build/PackageVersions.props"
+    finally
+        Directory.Delete(dir, recursive=true)
+
+[<Fact>]
+let ``later save of package versions still writes propsPath`` () =
+    let dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())
+    Directory.CreateDirectory dir |> ignore
+    try
+        let original =
+            { makeGraph [ node "Core" (ver 1 0 0) [] ] with
+                PropsPath = Some "dir/pkg.props" }
+        GraphPersistence.save original dir |> Result.isOk |> should equal true
+
+        let updated =
+            { original with
+                Packages =
+                    Map.ofList [
+                        "Core", node "Core" (ver 1 0 1) []
+                    ] }
+        GraphPersistence.save updated dir |> Result.isOk |> should equal true
+
+        match GraphPersistence.load dir with
+        | Error e -> failwith e
+        | Ok g ->
+            g.PropsPath |> should equal (Some "dir/pkg.props")
+            g.Packages["Core"].Version |> should equal (ver 1 0 1)
+
+        let json = File.ReadAllText(Path.Combine(dir, ".dotgraph.json"))
+        json |> should haveSubstring "dir/pkg.props"
     finally
         Directory.Delete(dir, recursive=true)

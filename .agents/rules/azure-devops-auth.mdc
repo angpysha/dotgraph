@@ -1,0 +1,36 @@
+---
+description: Azure DevOps CLI auth on macOS — Keychain PAT via azdo-login (never commit tokens)
+alwaysApply: true
+---
+
+# Azure DevOps CLI — macOS authentication
+
+Before any `az devops` / `az pipelines` / Azure DevOps CLI skill command on macOS, ensure the
+session is authenticated. **Never** commit PATs or print `AZURE_DEVOPS_EXT_PAT`.
+
+## One-time Keychain setup
+
+```bash
+security add-generic-password -a "$USER" -s AZDO_PAT -w "YOUR_PAT" -U
+```
+
+## Login (every new shell / before ADO CLI work)
+
+```bash
+azdo-login() {
+  export AZURE_DEVOPS_EXT_PAT="$(security find-generic-password -s AZDO_PAT -w)"
+  az devops login --organization https://dev.azure.com/petrovskyitools
+}
+```
+
+Run `azdo-login` before Azure DevOps CLI operations. The function sets `AZURE_DEVOPS_EXT_PAT`
+and logs `az` into org **petrovskyitools**.
+
+Optional: add the function to `~/.zshrc`, or source
+`skills/azure-devops-cli/templates/azdo-login-macos.zsh` (supports `AZDO_ORG` override).
+
+## Agent / CI
+
+- **macOS local:** run `azdo-login` in the terminal (or ensure PAT is already exported).
+- **CI / Linux:** pipeline secret → `AZURE_DEVOPS_EXT_PAT` — no Keychain.
+- Do not paste PATs into chat, commits, or logs.

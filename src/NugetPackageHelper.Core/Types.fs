@@ -21,6 +21,8 @@ type DependencyGraph = {
     CreatedAt: System.DateTime
     /// Branch name stored in .dotgraph.json. Missing JSON means main.
     CompareBranch: string
+    /// Relative or absolute props file path in .dotgraph.json. Missing JSON means unset.
+    PropsPath: string option
     Packages: Map<string, PackageNode>
 }
 

@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: "{FEATURE_TITLE}"
+  version: "0.1.0"
+  description: |
+    HTTP API contract for REQ-{REQ_ID}.
+    Authored in Phase 5 (architect) or Phase 6 (team-lead contract lock).
+    Developers implement exactly this schema in Phase 7.
+
+    **Status:** draft — complete paths, schemas, and operationIds before design gate.
+
+x-req-id: REQ-{REQ_ID}
+x-pipeline-skill: openapi-contract
+
+servers:
+  - url: /api
+    description: Relative to deployment base URL
+
+tags: []
+
+paths: {}
+
+components:
+  schemas: {}
+  securitySchemes: {}

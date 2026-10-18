@@ -168,6 +168,7 @@ module ProjectScanner =
                 SolutionPath  = solutionPath
                 CreatedAt     = System.DateTime.UtcNow
                 CompareBranch = "main"
+                PropsPath     = None
                 Packages      = packages
             }
             Ok (graph, warnings)

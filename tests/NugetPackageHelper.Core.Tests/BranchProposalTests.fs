@@ -21,6 +21,7 @@ let private graph nodes : DependencyGraph =
     { SolutionPath = "/repo/App.slnx"
       CreatedAt = System.DateTime.UtcNow
       CompareBranch = "main"
+      PropsPath = None
       Packages = nodes |> List.map (fun n -> n.Name, n) |> Map.ofList }
 
 let private source (liveXml: string) (branchXml: string option) : BranchProposal.PackageXml =

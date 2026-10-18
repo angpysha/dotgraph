@@ -88,7 +88,11 @@ let run (dryRun: bool) (interactive: bool) =
                         match applyChanges liveGraph changes dir with
                         | Error e -> Output.error e; 1
                         | Ok updatedGraph ->
-                            match GraphPersistence.save updatedGraph dir with
+                            let toSave =
+                                { updatedGraph with
+                                    CompareBranch = snapshot.CompareBranch
+                                    PropsPath = snapshot.PropsPath }
+                            match GraphPersistence.save toSave dir with
                             | Error e -> Output.error e; 1
                             | Ok () ->
                                 Output.success $"Applied {changes.Length} version change(s) and updated .dotgraph.json"

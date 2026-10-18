@@ -1,0 +1,33 @@
+schema_version: "1.0"
+
+preset:
+  id: "grill-tasks"
+  name: "Grill Tasks"
+  version: "1.0.0"
+  description: "Append optional post-tasks grilling with risk recommendation for parallel/cross-story graphs"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-addendum.md"
+      description: "Append optional grill / risk-recommend note"
+      strategy: "append"
+  commands:
+    - type: "command"
+      name: "speckit.tasks"
+      file: "commands/speckit.tasks.append.md"
+      description: "Optional grill; recommend when parallel-ready or cross-story deps"
+      strategy: "append"
+
+tags:
+  - "tasks"
+  - "grilling"
+  - "beads"
+  - "br"

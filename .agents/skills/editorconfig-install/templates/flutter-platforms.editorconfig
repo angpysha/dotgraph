@@ -1,0 +1,16 @@
+# >>> editorconfig-install:flutter-platforms
+# Native code in Flutter plugins / platform channels (optional folders)
+
+[*.{kt,kts}]
+indent_size = 4
+max_line_length = 120
+
+[*.{swift,m,mm,h}]
+indent_size = 4
+
+[*.gradle]
+indent_size = 4
+
+[*.xcconfig]
+indent_size = 4
+# <<< editorconfig-install:flutter-platforms

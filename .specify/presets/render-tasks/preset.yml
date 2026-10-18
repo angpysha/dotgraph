@@ -1,0 +1,33 @@
+schema_version: "1.0"
+
+preset:
+  id: "render-tasks"
+  name: "Render Tasks From BR"
+  version: "1.0.0"
+  description: "Append Spec Kit tasks guidance to render tasks.md from the br graph"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-addendum.md"
+      description: "Append tasks.md projection note"
+      strategy: "append"
+  commands:
+    - type: "command"
+      name: "speckit.tasks"
+      file: "commands/speckit.tasks.append.md"
+      description: "Render tasks.md projection (checklist + Mermaid) from br"
+      strategy: "append"
+
+tags:
+  - "tasks"
+  - "beads"
+  - "br"
+  - "mermaid"

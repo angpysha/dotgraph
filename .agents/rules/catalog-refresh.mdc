@@ -1,0 +1,52 @@
+---
+description: Keep pipeline catalog assets (skills, agents, rules) in sync with the installed agentic-tool version
+alwaysApply: true
+---
+
+# Catalog refresh — always use the latest skills & agents
+
+The tool package (`.agents/pipeline.home` → `VERSION`) is the **source of truth** for
+skills, agents, rules, and pack overlays. The repo copy under `.agents/` and host
+projections (`.cursor/`) must match the installed `agentic-tool` version.
+
+## When to refresh
+
+Refresh **before SDLC work** when any of these is true:
+
+- `agentic-tool` was updated/reinstalled on this machine
+- `agentic-tool verify` warns **catalog stale**
+- `pipeline.manifest.json` → `catalog_version` ≠ `agentic-tool version`
+- A skill/agent/rule you need is missing or looks outdated
+
+## Refresh workflow (mechanical)
+
+```bash
+# 1. Update the global tool (developers — from ai-dev-pipeline repo)
+pwsh ./scripts/install-local.ps1
+# or: dotnet tool update -g Agentic.Tool
+
+# 2. Re-extract catalog into the repo (overwrites skills/agents/rules from package)
+agentic-tool apply --target .
+
+# 3. Re-project to host (.cursor/, CLAUDE.md, etc.)
+agentic-tool sync --target . --host auto
+
+# 4. Confirm
+agentic-tool verify --target .
+```
+
+In agent chat (optional — re-detect stack if packs may have changed):
+
+```text
+Run .agents adapt --update
+```
+
+`apply` always copies **all** `alwaysSkills`, core agents, core rules, and active pack
+overlays from the catalog. `sync` pushes them to the host. **Never hand-edit** files under
+`.cursor/skills/` or `.cursor/rules/` — edit in `core/` or packs in the tool repo, then
+re-apply.
+
+## Coordinator / adapt rule
+
+At session start, if `catalog_version` is behind `agentic-tool version`, **stop** and tell
+the human to run `apply` + `sync` before continuing SDLC work.

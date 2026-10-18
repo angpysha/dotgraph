@@ -1,0 +1,26 @@
+---
+description: Native AOT / trimming safety for .NET Minimal API projects
+globs: src/**/*.cs
+alwaysApply: false
+---
+
+# AOT Safety
+
+Apply this rule when the project publishes with Native AOT (`scripts/publish-aot.sh`).
+
+## Do
+
+- Source-generated `System.Text.Json` (`JsonSerializerContext`)
+- Explicit DI registration — no assembly scanning
+- `ICommandHandler` / `IQueryHandler` interfaces (no MediatR)
+- `[RequiresUnreferencedCode]` only with justification when unavoidable
+
+## Do not
+
+- Runtime reflection over open types (`Type.GetType`, `Activator.CreateInstance` on unknown types)
+- `dynamic`, Newtonsoft.Json, AutoMapper, MediatR
+- New dependencies without verifying trim/AOT compatibility
+
+Run `aot-compat-check` before handoff when adding dependencies or serialization code.
+
+See [docs/dotnet-code-style.mdc](../../docs/dotnet-code-style.mdc) §6.

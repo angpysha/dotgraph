@@ -1,0 +1,20 @@
+---
+description: Definition of Ready — task must pass before entering Phase 7 implementation
+globs: docs/sdlc/design/IMPLEMENTATION-PLAN-*.md,.beads/**
+alwaysApply: false
+---
+
+# Definition of Ready (DoR)
+
+A `br` task may **not** enter Phase 7 (Developer) until all items hold:
+
+- [ ] Acceptance criteria copied on the `br` issue
+- [ ] Edge cases listed in REQ (from Phase 2 grilling)
+- [ ] File map feasible — no "TBD" implementation paths
+- [ ] No **blocking** open technical questions (Phase 6 plan)
+- [ ] Infrastructure impact known (devops section when applicable)
+- [ ] Lane tagged on issue: `flow: full|fast|short`
+
+If DoR fails, coordinator loops back to Phase 6 (Team Lead).
+
+Template: `.cursor/skills/sdlc-orchestrator/templates/definition-of-done.md`

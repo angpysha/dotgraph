@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "codesearch": {
+      "command": "codesearch",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

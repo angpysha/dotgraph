@@ -1,0 +1,101 @@
+{
+  "pipeline_version": "1",
+  "catalog_version": "0.9.0",
+  "status": "ready",
+  "host": "cursor",
+  "catalog_home": ".agents/pipeline.home",
+  "recommendation": ".agents/pipeline.recommendation.json",
+  "project": {
+    "name": "dotgraph",
+    "brief": "PROJECT.md",
+    "default_lane": "full"
+  },
+  "tracker": {
+    "type": "beads",
+    "prefix": "task"
+  },
+  "pr": {
+    "type": "github",
+    "org": "angpysha",
+    "project": "",
+    "repo": "dotgraph",
+    "target_branch": "main",
+    "branch_prefix": {
+      "feature": "feature/",
+      "fix": "fix/",
+      "chore": "chore/"
+    }
+  },
+  "build": {
+    "command": "dotnet build --configuration Release --verbosity minimal"
+  },
+  "test": {
+    "command": "dotnet test --configuration Release --verbosity minimal"
+  },
+  "format": {
+    "command": ""
+  },
+  "dotgraph": {
+    "toolVersion": "0.3.1",
+    "snapshot": ".dotgraph.json"
+  },
+  "artifacts": {
+    "intake": "docs/sdlc/requirements/INTAKE-{id}.md",
+    "requirements": "docs/sdlc/requirements/REQ-{id}-{slug}.md",
+    "sdd": "docs/sdlc/design/SDD-{id}-{slug}.md",
+    "tdd": "docs/sdlc/design/TDD-{id}-{slug}.md",
+    "plan": "docs/sdlc/design/IMPLEMENTATION-PLAN-{id}.md",
+    "adr": "docs/sdlc/adr/{n}-{slug}.md",
+    "test_report": "docs/sdlc/test-reports/TEST-{id}-{slug}.md",
+    "openapi": "docs/sdlc/api/OAPI-{id}-{slug}.yaml",
+    "openapi_brief": "docs/sdlc/api/OAPI-{id}-{slug}-brief.md",
+    "graphql": "docs/sdlc/api/GQL-{id}-{slug}.graphql",
+    "graphql_brief": "docs/sdlc/api/GQL-{id}-{slug}-brief.md",
+    "grpc_proto": "docs/sdlc/api/GRPC-{id}-{slug}.proto",
+    "grpc_brief": "docs/sdlc/api/GRPC-{id}-{slug}-brief.md"
+  },
+  "gates": {
+    "requirements": ".cursor/skills/sdlc-orchestrator/scripts/validate-requirements.ps1",
+    "design": ".cursor/skills/sdlc-orchestrator/scripts/validate-design.ps1",
+    "tasks": ".cursor/skills/sdlc-orchestrator/scripts/validate-tasks.ps1",
+    "dev": ".cursor/skills/sdlc-orchestrator/scripts/run-dev-gate.ps1",
+    "test": ".cursor/skills/sdlc-orchestrator/scripts/run-test-gate.ps1"
+  },
+  "checkpoints": {
+    "dir": "_code_agent"
+  },
+  "packs": [
+    "dotnet-minimal"
+  ],
+  "packs_extra": [],
+  "agents": [
+    "coordinator",
+    "ba-analyst",
+    "architect",
+    "team-lead",
+    "developer",
+    "tester",
+    "tech-writer"
+  ],
+  "agents_extra": [],
+  "agents_disable": [],
+  "features": {},
+  "spec_kit": {
+    "enabled": true,
+    "integration": "cursor",
+    "dir": ".specify",
+    "specs_dir": "specs",
+    "constitution": ".specify/memory/constitution.md"
+  },
+  "code_search": {
+    "primary": "serena",
+    "project_name": "package_helper",
+    "codebase_name": "package_helper"
+  },
+  "adapt": {
+    "last_run": "2026-08-30T20:47:20Z",
+    "catalog_version": "0.9.0",
+    "code_search_source": "serena",
+    "flags": ["--use-serena-mcp"]
+  }
+}

@@ -1,0 +1,19 @@
+---
+description: Definition of Done — task exit checklist before Phase 9/10 closeout
+globs: docs/sdlc/test-reports/**,.beads/**
+alwaysApply: false
+---
+
+# Definition of Done (DoD)
+
+Before coordinator closes a task at Phase 10, verify:
+
+- [ ] All acceptance criteria met; traceability matrix complete
+- [ ] Unit tests (and integration if required) green; `run-test-gate.ps1` PASS on full/fast lanes
+- [ ] No new warnings/analyzer findings; `dotnet format` clean
+- [ ] Code style per `docs/dotnet-code-style.mdc`; AOT check when applicable
+- [ ] Docs/OpenAPI updated if contract changed
+- [ ] No secrets in diff; secret-scan passed (dev gate)
+- [ ] Human review approved (Phase 9)
+
+Template: `.cursor/skills/sdlc-orchestrator/templates/definition-of-done.md`

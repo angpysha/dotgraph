@@ -1,0 +1,101 @@
+schema_version: "1.0"
+workflow:
+  id: "pipeline-short"
+  name: "Pipeline Short Lane"
+  version: "1.0.0"
+  author: "ai-dev-pipeline"
+  description: "Short lane — specify → plan → tasks → analyze → implement → converge"
+
+requires:
+  speckit_version: ">=0.8.5"
+  integrations:
+    any: ["cursor", "claude", "copilot", "gemini", "opencode"]
+
+inputs:
+  spec:
+    type: string
+    required: true
+  integration:
+    type: string
+    default: "auto"
+  spec_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+  plan_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+  tasks_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+  final_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review spec before planning."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: spec_verdict
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-plan
+    type: gate
+    message: "Review plan before tasks."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: plan_verdict
+
+  - id: tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: analyze
+    command: speckit.analyze
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-tasks
+    type: gate
+    message: "Review tasks/analyze before implement."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: tasks_verdict
+
+  - id: implement
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: converge
+    command: speckit.converge
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-final
+    type: gate
+    message: "Approve short-lane delivery."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: final_verdict

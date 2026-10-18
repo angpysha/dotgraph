@@ -23,6 +23,10 @@ module GraphPersistence =
         root["solutionPath"] <- JsonValue.Create(Path.GetRelativePath(baseDir, graph.SolutionPath)) :> JsonNode
         root["createdAt"]    <- JsonValue.Create(graph.CreatedAt.ToUniversalTime().ToString("o")) :> JsonNode
         root["compareBranch"] <- JsonValue.Create(compareBranch) :> JsonNode
+        match graph.PropsPath with
+        | Some path when not (System.String.IsNullOrWhiteSpace path) ->
+            root["propsPath"] <- JsonValue.Create(path.Trim()) :> JsonNode
+        | _ -> ()
 
         let pkgs = JsonObject()
         for (name, node) in graph.Packages |> Map.toSeq do
@@ -49,6 +53,12 @@ module GraphPersistence =
                 | node ->
                     let raw = node.GetValue<string>()
                     if System.String.IsNullOrWhiteSpace raw then "main" else raw.Trim()
+            let propsPath =
+                match root["propsPath"] with
+                | null -> None
+                | node ->
+                    let raw = node.GetValue<string>()
+                    if System.String.IsNullOrWhiteSpace raw then None else Some (raw.Trim())
             let pkgsNode  = root["packages"] :?> JsonObject
 
             let packages =
@@ -73,6 +83,7 @@ module GraphPersistence =
                 SolutionPath  = Path.GetFullPath(Path.Combine(baseDir, slnRel))
                 CreatedAt     = createdAt
                 CompareBranch = compareBranch
+                PropsPath     = propsPath
                 Packages      = packages
             }
         with ex ->
