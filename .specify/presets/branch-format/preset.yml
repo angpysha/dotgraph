@@ -1,0 +1,32 @@
+schema_version: "1.0"
+
+preset:
+  id: "branch-format"
+  name: "Branch Format"
+  version: "1.0.0"
+  description: "Append mandatory week-based git branch naming via branch-format skill"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "spec-template"
+      file: "templates/spec-addendum.md"
+      description: "Append branch-format guidance to feature specs"
+      strategy: "append"
+  commands:
+    - type: "command"
+      name: "speckit.specify"
+      file: "commands/speckit.specify.append.md"
+      description: "Mandate branch-format skill for git branches"
+      strategy: "append"
+
+tags:
+  - "branch"
+  - "git"
+  - "workflow"

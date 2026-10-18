@@ -1,0 +1,40 @@
+schema_version: "1.0"
+
+extension:
+  id: "design-context"
+  name: "Design Context"
+  version: "1.0.0"
+  description: "Scan plan vs architecture; ADRs/RFCs; readonly critique before tasks"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  commands:
+    - name: "speckit.design-context.scan"
+      file: "commands/scan.md"
+      description: "Scan architecture and record ADRs/RFCs/task-split hints"
+    - name: "speckit.design-context.critique"
+      file: "commands/critique.md"
+      description: "Readonly sufficiency check; recommend scan if the plan is thin"
+
+hooks:
+  after_plan:
+    command: "speckit.design-context.critique"
+    optional: true
+    prompt: "Check whether architecture/decisions are sufficient after plan? (readonly; may recommend scan)"
+    description: "Readonly critique after plan"
+  before_tasks:
+    command: "speckit.design-context.critique"
+    optional: true
+    prompt: "Before tasks, check architecture/ADRs. If insufficient, run /speckit.design-context.scan first (do not start other agents)."
+    description: "Readonly critique before tasks"
+
+tags:
+  - "architecture"
+  - "adr"
+  - "plan"
+  - "tasks"

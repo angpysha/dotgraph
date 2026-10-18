@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "extensions": {
+    "design-context": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:2fc67bfe7dbd2736d7a53588808bea63def415fd1a16ce43c78be664fea61fa0",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {
+        "cursor-agent": [
+          "speckit.design-context.scan",
+          "speckit.design-context.critique"
+        ]
+      },
+      "registered_skills": [],
+      "installed_at": "2026-08-30T20:47:20.057853+00:00"
+    }
+  }
+}

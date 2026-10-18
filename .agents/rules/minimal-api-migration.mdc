@@ -1,0 +1,30 @@
+---
+description: Target architecture and conventions for Minimal API migrations
+globs: src/**/*.cs
+alwaysApply: false
+---
+
+# Minimal API Migration Conventions
+
+Use this rule to keep migrations to ASP.NET Core Minimal API safe and consistent.
+
+## Project layout and dependencies
+
+- `Core` project: models, DTOs, helpers, service interfaces only.
+- `Infrastructure` project: services, adapters, and DI registration.
+- `Api` project: host and endpoint mapping.
+- `Tests` project: unit + integration + contract coverage.
+
+Allowed references: `Api -> Infrastructure -> Core`, `Api -> Core`, `Tests -> all`.
+
+## Endpoints
+
+- Preserve existing routes and response contracts.
+- Keep endpoint handlers thin and map routes through extension methods.
+- Register literal routes before parameterized routes.
+
+## Constraints
+
+- Keep business logic in services.
+- Do not commit secrets.
+- Comments in English.

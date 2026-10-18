@@ -1,0 +1,19 @@
+---
+description: .NET / ASP.NET Core code style — Microsoft formatting, minimal APIs, optional AOT-safe patterns
+globs: src/**/*.cs
+alwaysApply: false
+---
+
+# .NET Code Style
+
+Full standard: [docs/dotnet-code-style.mdc](../../docs/dotnet-code-style.mdc)
+
+On conflict with routing/layout, [.cursor/rules/minimal-api-migration.mdc](minimal-api-migration.mdc) wins.
+
+**Quick checks (Phase 7 — after 7.4):**
+- Run **`dotnet-format`** skill immediately after writing code (step 7.4)
+- Run **`dotnet-unit-tests`** skill at step 7.5 (Cobertura + TRX for Azure DevOps)
+- File-scoped namespaces; prefer `record` for DTOs/commands
+- Minimal APIs — thin endpoints, logic in `Infrastructure/Services/`
+- `dotnet format` clean; warnings as errors where configured
+- If Native AOT is enabled, also apply `aot-safety.mdc` and run `aot-compat-check` in 7.7

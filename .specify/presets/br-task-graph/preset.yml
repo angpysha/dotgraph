@@ -1,0 +1,33 @@
+schema_version: "1.0"
+
+preset:
+  id: "br-task-graph"
+  name: "BR Task Graph"
+  version: "1.0.0"
+  description: "Append br-first Spec Kit tasks: create canonical beads graph before tasks.md"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-addendum.md"
+      description: "Append br-first tasks authority note"
+      strategy: "append"
+  commands:
+    - type: "command"
+      name: "speckit.tasks"
+      file: "commands/speckit.tasks.append.md"
+      description: "Mandate br graph create/reconcile before tasks.md projection"
+      strategy: "append"
+
+tags:
+  - "tasks"
+  - "beads"
+  - "br"
+  - "workflow"

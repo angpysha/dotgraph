@@ -398,10 +398,35 @@ dotgraph review --force
 
 ---
 
+## Step 7 — Export package versions to a props file
+
+You can mirror every package in `.dotgraph.json` into a central MSBuild props file for other projects to consume. The path is stored on the same settings file as `compareBranch`, as root property `propsPath`. Until you save a path, export does nothing.
+
+```bash
+dotgraph props-path                        # print the saved path (or say none is saved)
+dotgraph props-path build/PackageVersions.props
+dotgraph props-path --clear
+```
+
+Saving or clearing the path does not write the props file and does not rescan the solution.
+
+Write the snapshot versions (not live `.csproj` files):
+
+```bash
+dotgraph export-props
+```
+
+The tool creates or updates a single item group labeled `Dotgraph`. Each entry is `<PackageVersion Include="PackageId" Version="x.y.z" />`, ordered by package name. Other item groups in that file are left unchanged. A second export with the same snapshot prints `Props file already matches the saved list.` and does not rewrite the file.
+
+`init`, `refresh`, `diff`, `sync`, `update`, `propose`, and `review` do not export props. `refresh`, `sync`, and `propose` keep your saved `propsPath` when they rescan `.dotgraph.json`.
+
+---
+
 ## Flags Reference
 
 | Flag | Commands | Description |
 |---|---|---|
+| `--clear` | `props-path` | Remove the saved props file path |
 | `--dry-run` | `update`, `sync`, `propose` | Print proposals only, write nothing |
 | `--interactive` | `update`, `sync` | Walk through each proposal interactively |
 | `--force` | `update`, `propose`, `review` | Accept an earlier release without the extra question |

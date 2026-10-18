@@ -1,0 +1,12 @@
+[
+  {"id":1,"title":"feat(REQ-0001): auth","status":"active","source":"refs/heads/feature/REQ-0001","target":"refs/heads/main","createdBy":"alice@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/1"},
+  {"id":2,"title":"feat(REQ-0002): cache","status":"active","source":"refs/heads/feature/REQ-0002","target":"refs/heads/main","createdBy":"bob@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/2"},
+  {"id":3,"title":"fix: timeout","status":"completed","source":"refs/heads/fix/timeout","target":"refs/heads/main","createdBy":"carol@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/3"},
+  {"id":4,"title":"chore: deps","status":"active","source":"refs/heads/chore/deps","target":"refs/heads/main","createdBy":"dave@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/4"},
+  {"id":5,"title":"feat(REQ-0005): api","status":"active","source":"refs/heads/feature/REQ-0005","target":"refs/heads/main","createdBy":"eve@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/5"},
+  {"id":6,"title":"feat(REQ-0006): rate limit","status":"active","source":"refs/heads/feature/REQ-0006","target":"refs/heads/main","createdBy":"frank@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/6"},
+  {"id":7,"title":"fix: null ref","status":"abandoned","source":"refs/heads/fix/null","target":"refs/heads/main","createdBy":"grace@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/7"},
+  {"id":8,"title":"docs: readme","status":"completed","source":"refs/heads/chore/docs","target":"refs/heads/main","createdBy":"henry@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/8"},
+  {"id":9,"title":"feat(REQ-0009): graphql","status":"active","source":"refs/heads/feature/REQ-0009","target":"refs/heads/main","createdBy":"iris@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/9"},
+  {"id":10,"title":"feat(REQ-0010): grpc","status":"active","source":"refs/heads/feature/REQ-0010","target":"refs/heads/main","createdBy":"jack@contoso.com","url":"https://dev.azure.com/org/p/_git/r/pullrequest/10"}
+]

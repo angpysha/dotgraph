@@ -1,0 +1,33 @@
+schema_version: "1.0"
+
+preset:
+  id: "implement-br-task"
+  name: "Implement BR Task Sync"
+  version: "1.0.0"
+  description: "Append speckit.implement guidance to claim/close br issues and refresh tasks.md"
+  author: "ai-dev-pipeline"
+  repository: "https://github.com/petrovskyitools/ai-dev-pipeline"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.8.5"
+
+provides:
+  templates:
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-addendum.md"
+      description: "Append implement↔br sync note into tasks template context"
+      strategy: "append"
+  commands:
+    - type: "command"
+      name: "speckit.implement"
+      file: "commands/speckit.implement.append.md"
+      description: "Start/finish tasks in br then refresh tasks.md projection"
+      strategy: "append"
+
+tags:
+  - "implement"
+  - "beads"
+  - "br"
+  - "workflow"

@@ -1,0 +1,33 @@
+---
+description: Codebase discovery order — Serena MCP first, then Grep/Glob/Read
+alwaysApply: true
+---
+
+# Code Search Priority & Codebase Dedupe Protocol
+
+When exploring the repo, verifying implementations, or detecting stack during adapt:
+
+1. **Serena MCP** (`code_search.primary: serena`, project `package_helper` in `.serena/project.yml`) —
+   `activate_project`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`,
+   `get_symbols_overview`, `find_file`, `list_dir`, `read_file`
+2. **Default tools** — Grep, Glob, Read (when Serena MCP unavailable — state **DEGRADED MODE**)
+
+Manifest: `pipeline.manifest.json` → `code_search.project_name` / `codebase_name`.
+
+## Codebase Dedupe Protocol
+
+**Serena symbol/pattern search is the *only valid source*** for claims about what already exists
+in this repo during a session. After structural edits, restart or refresh LSP if symbols are stale
+(`restart_language_server`).
+
+**Hard rule — no creation without a Dedupe Ticket.** Before adding a new file, module, class,
+function, or helper, produce:
+
+- **Intent signature** — one sentence describing what you are about to add
+- **Queries** — 2–4 Serena searches you will run
+- **Top matches** — up to 5 file paths returned by the tool
+- **Decision** — `reuse | extend | new`
+- **Rationale** — why
+
+If Serena MCP is unavailable, state **DEGRADED MODE** and stop before making
+structural claims or changes (then use default tools only as last resort for narrow reads).

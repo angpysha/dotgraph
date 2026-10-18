@@ -32,7 +32,11 @@ let run (solutionOverride: string option) =
                     Output.error $"Circular dependency detected: {cycle |> String.concat arrow}"
                     1
                 | None ->
-                    match GraphPersistence.save fresh dir with
+                    let toSave =
+                        { fresh with
+                            CompareBranch = snapshot.CompareBranch
+                            PropsPath = snapshot.PropsPath }
+                    match GraphPersistence.save toSave dir with
                     | Error e -> Output.error e; 1
                     | Ok () ->
                         let pkg = fresh.Packages.Count

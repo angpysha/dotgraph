@@ -1,0 +1,8 @@
+# >>> editorconfig-install:rust
+[*.rs]
+indent_size = 4
+tab_width = 4
+max_line_length = 100
+
+# rustfmt is authoritative; EditorConfig helps editors before format-on-save.
+# <<< editorconfig-install:rust

@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1",
+  "recipes": {
+    "pr-list": {
+      "description": "List active pull requests in the configured repository",
+      "phase": "10",
+      "azArgs": ["repos", "pr", "list"],
+      "query": "[].{id:pullRequestId,title:title,status:status,source:sourceRefName,target:targetRefName,createdBy:createdBy.uniqueName,url:url}",
+      "maxRows": 50,
+      "vars": {}
+    },
+    "pr-show": {
+      "description": "Show a single pull request by id",
+      "phase": "10",
+      "azArgs": ["repos", "pr", "show", "--id", "{id}"],
+      "query": "{id:pullRequestId,title:title,status:status,description:description,source:sourceRefName,target:targetRefName,createdBy:createdBy.uniqueName,url:url,mergeStatus:mergeStatus}",
+      "maxRows": 1,
+      "vars": { "id": { "required": true, "description": "Pull request id" } }
+    },
+    "pipeline-list": {
+      "description": "List pipeline definitions in the project",
+      "phase": "7",
+      "azArgs": ["pipelines", "list"],
+      "query": "[].{id:id,name:name,folder:folder,revision:revision}",
+      "maxRows": 50,
+      "vars": {}
+    },
+    "pipeline-runs": {
+      "description": "List recent runs for a pipeline",
+      "phase": "7",
+      "azArgs": ["pipelines", "runs", "list", "--pipeline-id", "{pipelineId}"],
+      "query": "[].{id:id,state:state,result:result,sourceBranch:sourceBranch,finishedDate:finishedDate,url:url}",
+      "maxRows": 25,
+      "vars": {
+        "pipelineId": { "required": true, "description": "Pipeline definition id" },
+        "top": { "required": false, "description": "Max runs (passed as --top)" }
+      }
+    },
+    "pipeline-run-show": {
+      "description": "Show a single pipeline run with stage summary",
+      "phase": "7",
+      "azArgs": ["pipelines", "runs", "show", "--id", "{runId}", "--pipeline-id", "{pipelineId}"],
+      "query": "{id:id,state:state,result:result,sourceBranch:sourceBranch,finishedDate:finishedDate,url:url}",
+      "maxRows": 1,
+      "vars": {
+        "runId": { "required": true, "description": "Pipeline run id" },
+        "pipelineId": { "required": true, "description": "Pipeline definition id" }
+      }
+    },
+    "work-item-show": {
+      "description": "Show a work item by id",
+      "phase": "6",
+      "azArgs": ["boards", "work-item", "show", "--id", "{id}"],
+      "query": "{id:id,title:fields.'System.Title',state:fields.'System.State',type:fields.'System.WorkItemType',assignedTo:fields.'System.AssignedTo'.displayName,url:url}",
+      "maxRows": 1,
+      "vars": {
+        "id": { "required": true, "description": "Work item id" }
+      }
+    },
+    "work-item-query": {
+      "description": "Run a WIQL query and return matching work items",
+      "phase": "6",
+      "azArgs": ["boards", "query", "--wiql", "{wiql}"],
+      "query": "workItems[].{id:id,url:url}",
+      "maxRows": 50,
+      "vars": {
+        "wiql": { "required": true, "description": "WIQL query string" }
+      }
+    },
+    "repo-list": {
+      "description": "List git repositories in the project",
+      "phase": "6",
+      "azArgs": ["repos", "list"],
+      "query": "[].{id:id,name:name,defaultBranch:defaultBranch,remoteUrl:remoteUrl}",
+      "maxRows": 50,
+      "vars": {}
+    }
+  }
+}

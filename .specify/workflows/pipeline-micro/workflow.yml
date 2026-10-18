@@ -1,0 +1,59 @@
+schema_version: "1.0"
+workflow:
+  id: "pipeline-micro"
+  name: "Pipeline Micro Lane"
+  version: "1.0.0"
+  author: "ai-dev-pipeline"
+  description: "Micro lane — minimal specify → implement → verify"
+
+requires:
+  speckit_version: ">=0.8.5"
+  integrations:
+    any: ["cursor", "claude", "copilot", "gemini", "opencode"]
+
+inputs:
+  spec:
+    type: string
+    required: true
+  integration:
+    type: string
+    default: "auto"
+  spec_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+  impl_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Approve minimal spec before implement."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: spec_verdict
+
+  - id: implement
+    command: speckit.implement
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-impl
+    type: gate
+    message: "Approve micro implementation before verify."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: impl_verdict
+
+  - id: verify
+    type: shell
+    run: "pwsh -NoProfile -File .agents/scripts/verify-pipeline.ps1 ."

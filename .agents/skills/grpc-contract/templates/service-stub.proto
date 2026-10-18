@@ -1,0 +1,25 @@
+// REQ-{REQ_ID} — gRPC / Protocol Buffers contract (draft)
+// Parent requirement: REQ-{REQ_ID}
+// Skill: grpc-contract — complete in Phase 5 (architect) / lock in Phase 6 (team-lead)
+
+syntax = "proto3";
+
+package {PACKAGE_NAME}.v1;
+
+option csharp_namespace = "{PACKAGE_NAME}.V1";
+
+// REQ-{REQ_ID}: {FEATURE_TITLE}
+
+service {SERVICE_NAME} {
+  // Placeholder RPC — replace with real service methods
+  // @ac: AC-1
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+}
+
+// Add messages, enums, and additional services below.

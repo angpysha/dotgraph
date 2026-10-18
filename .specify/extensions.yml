@@ -1,0 +1,25 @@
+installed:
+- design-context
+settings:
+  auto_execute_hooks: true
+hooks:
+  after_plan:
+  - extension: design-context
+    command: speckit.design-context.critique
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Check whether architecture/decisions are sufficient after plan? (readonly;
+      may recommend scan)
+    description: Readonly critique after plan
+    condition: null
+  before_tasks:
+  - extension: design-context
+    command: speckit.design-context.critique
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Before tasks, check architecture/ADRs. If insufficient, run /speckit.design-context.scan
+      first (do not start other agents).
+    description: Readonly critique before tasks
+    condition: null

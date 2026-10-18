@@ -1,0 +1,108 @@
+{
+  "version": "1",
+  "description": "Pack registry for the universal AI dev pipeline. `.agents adapt` matches signals against semantic code-search MCP, PROJECT.md, and filesystem, then merges packs into pipeline.manifest.json and syncs overlays into the host (.cursor/, .claude/, etc).",
+  "packs": {
+    "dotnet-minimal": {
+      "signals": ["*.csproj", "*.slnx", "*.sln", "Minimal API", "xUnit"],
+      "agents": ["developer"],
+      "rules": ["dotnet-code-style", "minimal-api-migration"],
+      "optional_features": {
+        "native-aot": {
+          "signals": ["Native AOT", "PublishAot", "TrimMode"],
+          "skills": ["aot-compat-check"],
+          "rules": ["aot-safety"]
+        }
+      },
+      "defaults": {
+        "build": { "command": "dotnet build --configuration Release --verbosity minimal" },
+        "test": {
+          "command": "pwsh .cursor/skills/dotnet-unit-tests/scripts/dotnet-unit-tests.ps1",
+          "results": {
+            "directory": "TestResults",
+            "trx": "TestResults/test-results.trx",
+            "cobertura": "TestResults/coverage/cobertura.xml",
+            "summary": "TestResults/azure-devops-results.json"
+          }
+        },
+        "format": { "command": "" },
+        "dotgraph": { "toolVersion": "0.3.0", "snapshot": ".dotgraph.json" }
+      }
+    },
+    "postgres-ef": {
+      "signals": ["PostgreSQL", "EF Core", "Migrations", "Npgsql"],
+      "skills": ["ef-migration"],
+      "rules": ["migration-safety"]
+    },
+    "helm-k8s": {
+      "signals": ["Helm", "Chart.yaml", "kubernetes", "helmfile", "CI/CD"],
+      "skills": ["helm-expert"],
+      "agents_extra": ["devops"]
+    },
+    "flutter-bloc": {
+      "signals": ["pubspec.yaml", "lib/main.dart", "flutter", "BLoC"],
+      "agents": ["developer"],
+      "rules": ["flutter-bloc-style"],
+      "archive": ["devops", "security-reviewer"],
+      "defaults": {
+        "build": { "command": "flutter analyze && dart format --set-exit-if-changed ." },
+        "test": { "command": "flutter test" }
+      }
+    },
+    "node-typescript": {
+      "signals": ["package.json", "tsconfig.json", "node"],
+      "agents": ["developer"],
+      "rules": ["typescript-style"],
+      "defaults": {
+        "build": { "command": "npm run build" },
+        "test": { "command": "npm test" }
+      }
+    },
+    "ios-native": {
+      "signals": ["*.xcodeproj", "*.xcworkspace", "Package.swift", "*.swift", "Info.plist", "swift", "SwiftUI", "Xcode"],
+      "agents": ["developer"],
+      "agents_extra": ["devops"],
+      "rules": ["swift-style", "swiftui-architecture", "ios-signing"],
+      "skills": ["swift-package", "swift-lint", "swift-test", "xcode-build", "xc-archive", "xc-export", "ios-azure-pipelines"],
+      "optional_features": {
+        "cocoapods-migration": {
+          "signals": ["Podfile", "Podfile.lock"],
+          "skills": ["swift-package"]
+        }
+      },
+      "defaults": {
+        "build": {
+          "command": "pwsh .cursor/skills/swift-lint/scripts/swift-lint.ps1 -Mode lint && pwsh .cursor/skills/xcode-build/scripts/xcode-build.ps1 -Action build"
+        },
+        "test": {
+          "command": "pwsh .cursor/skills/swift-test/scripts/swift-test.ps1",
+          "results": {
+            "directory": "TestResults",
+            "junit": "TestResults/junit.xml",
+            "cobertura": "TestResults/coverage/cobertura.xml",
+            "xcresult": "TestResults/Test.xcresult",
+            "summary": "TestResults/azure-devops-results.json"
+          }
+        },
+        "format": {
+          "command": "pwsh .cursor/skills/swift-lint/scripts/swift-lint.ps1 -Mode format"
+        }
+      }
+    },
+    "generic": {
+      "signals": ["*"],
+      "agents": ["developer"],
+      "defaults": {
+        "build": { "command": "echo 'set build.command in pipeline.manifest.json'" },
+        "test": { "command": "echo 'set test.command in pipeline.manifest.json'" }
+      }
+    }
+  },
+  "trackers": {
+    "beads": { "signals": [".beads/", "br ready"] },
+    "github": { "signals": [".github/ISSUE_TEMPLATE"] }
+  },
+  "pr_providers": {
+    "azure-devops": { "signals": ["azure-pipelines/", "azure-pipelines.yml"] },
+    "github": { "signals": [".github/workflows/", ".github/pull_request_template.md"] }
+  }
+}

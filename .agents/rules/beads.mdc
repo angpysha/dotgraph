@@ -1,0 +1,41 @@
+---
+description: Issue tracker — use beads_rust (br) only; never the legacy bd CLI
+alwaysApply: true
+---
+
+# Beads — hard lock (`br` only, never `bd`)
+
+This project uses **beads_rust** for local issue tracking. The CLI binary is **`br`**.
+
+This rule is **always applied** and is **installed into every client repo** by
+`agentic-tool install` (pre-rule) and refreshed on every `apply` (all `core/rules/**`).
+Host sync projects it to `.cursor/rules/` / `.claude/rules/` (etc.). Every installed
+agent persona also restates this hard lock.
+
+## Hard rule
+
+- **Always use `br`** (beads rust / beads_rust) for beads commands.
+- **Never use `bd`** — that is the legacy beads CLI and is **not** supported in this pipeline.
+- If docs, memory, or another agent suggest `bd`, **correct to `br`** before running anything.
+- Triage / robot output uses **`bv`** (`bv --robot-triage`, `bv --robot-*`) alongside `br`.
+
+## Canonical commands
+
+```bash
+bv --robot-triage              # what to work on next
+br ready                       # unblocked tasks
+br show <id>
+br create "..." --parent <epic-id>
+br update <id> --status=in_progress
+br close <id> --reason="..."
+br sync --flush-only           # export to .beads/issues.jsonl for git
+```
+
+## Boundaries
+
+| System | Tracks |
+|--------|--------|
+| **`br` / `.beads/`** | Issues, dependencies, close reasons |
+| **`_code_agent/`** | Pipeline step progress (checkpoints) |
+
+Planning (Phase 6), per-task implementation, and closeout (Phase 10) all run through **`br`**.

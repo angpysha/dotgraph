@@ -1,0 +1,32 @@
+# REQ-{REQ_ID} — GraphQL schema contract (draft)
+# Parent requirement: REQ-{REQ_ID}
+# Skill: graphql-contract — complete in Phase 5 (architect) / lock in Phase 6 (team-lead)
+
+"""
+{FEATURE_TITLE}
+Contract-first GraphQL schema for REQ-{REQ_ID}.
+"""
+
+directive @req(id: String!) on FIELD_DEFINITION | OBJECT | INPUT_OBJECT
+directive @ac(ids: [String!]!) on FIELD_DEFINITION
+
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  """
+  Placeholder — replace with real queries. @ac(ids: ["AC-1"])
+  """
+  _health: String! @req(id: "REQ-{REQ_ID}")
+}
+
+type Mutation {
+  """
+  Placeholder — replace with real mutations when needed.
+  """
+  _noop: Boolean! @deprecated(reason: "Remove when mutations are defined")
+}
+
+# Add types, inputs, enums, unions below.

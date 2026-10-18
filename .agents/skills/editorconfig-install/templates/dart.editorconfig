@@ -1,0 +1,9 @@
+# >>> editorconfig-install:dart
+[*.dart]
+indent_size = 2
+tab_width = 2
+max_line_length = 80
+
+# Dart analyzer respects EditorConfig for some editor integrations.
+# Run `dart format .` for authoritative formatting.
+# <<< editorconfig-install:dart

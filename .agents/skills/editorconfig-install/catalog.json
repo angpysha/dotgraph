@@ -1,0 +1,61 @@
+{
+  "version": "1",
+  "description": "EditorConfig stack catalog for editorconfig-install skill.",
+  "stacks": [
+    {
+      "id": "csharp",
+      "name": "C# / .NET",
+      "signals": ["*.csproj", "*.slnx", "*.sln", "*.fsproj"],
+      "templates": ["base", "csharp"],
+      "description": "C# formatting and analyzer-friendly EditorConfig (SDK / dotnet format)."
+    },
+    {
+      "id": "flutter",
+      "name": "Flutter (Dart — Android, iOS, Windows, macOS, Linux, Web)",
+      "signals": ["pubspec.yaml", "analysis_options.yaml"],
+      "signals_extra": ["lib/main.dart", "flutter"],
+      "templates": ["base", "dart", "flutter-platforms"],
+      "description": "Dart style for all Flutter targets; Kotlin/Swift/Gradle for native plugin folders."
+    },
+    {
+      "id": "rust",
+      "name": "Rust",
+      "signals": ["Cargo.toml"],
+      "signals_extra": ["src/main.rs", "src/lib.rs"],
+      "templates": ["base", "rust"],
+      "description": "Rust / rustfmt-friendly defaults."
+    },
+    {
+      "id": "react",
+      "name": "React (JS/TS/TSX)",
+      "signals": ["package.json"],
+      "signals_extra": ["\"react\"", "vite", "next"],
+      "templates": ["base", "typescript", "web-frontend"],
+      "description": "TypeScript/JavaScript + JSX/TSX for React apps."
+    },
+    {
+      "id": "angular",
+      "name": "Angular",
+      "signals": ["angular.json"],
+      "signals_extra": ["@angular/core"],
+      "templates": ["base", "typescript", "html", "web-frontend"],
+      "description": "TypeScript + HTML templates for Angular components."
+    },
+    {
+      "id": "svelte",
+      "name": "Svelte / SvelteKit",
+      "signals": ["svelte.config.js", "svelte.config.ts"],
+      "signals_extra": ["@sveltejs/kit", ".svelte"],
+      "templates": ["base", "typescript", "svelte", "web-frontend"],
+      "description": "Svelte single-file components + TS/JS."
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript / Node (generic)",
+      "signals": ["tsconfig.json"],
+      "signals_extra": ["package.json"],
+      "templates": ["base", "typescript", "web-frontend"],
+      "description": "Generic TS/JS when no specific frontend framework is detected."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# >>> editorconfig-install:web-frontend
+[*.{css,scss,sass,less}]
+indent_size = 2
+max_line_length = 120
+
+[*.{vue}]
+indent_size = 2
+
+[package.json]
+indent_size = 2
+# <<< editorconfig-install:web-frontend

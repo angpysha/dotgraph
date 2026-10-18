@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "presets": {
+    "branch-format": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:94033e8259ddbaf80fb32665801cabba7f2315be093d046b6c146345105e7273",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-08-30T20:47:19.339939+00:00"
+    },
+    "br-task-graph": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:72cb931068ef50437a88a5339abbb24b415cd6ed5c94cbe3c83b92c7aa5b79c9",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-08-30T20:47:19.486254+00:00"
+    },
+    "grill-tasks": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:20770d666edc3ba322233b95e141a013623bdbb7055df2128027fc881cc206c4",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-08-30T20:47:19.629220+00:00"
+    },
+    "render-tasks": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:a3c8b16f3a956308b917e5d1eae47d1fa1315365ad7898758857c1550e3aa92f",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-08-30T20:47:19.767051+00:00"
+    },
+    "implement-br-task": {
+      "version": "1.0.0",
+      "source": "local",
+      "manifest_hash": "sha256:b53d199e47a47ef1ac84e9aa0967d4d789005f99eddc09777ab4c441115f0bd8",
+      "enabled": true,
+      "priority": 10,
+      "registered_commands": {},
+      "registered_skills": {},
+      "installed_at": "2026-08-30T20:47:19.904325+00:00"
+    }
+  }
+}

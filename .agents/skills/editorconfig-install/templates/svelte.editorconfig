@@ -1,0 +1,6 @@
+# >>> editorconfig-install:svelte
+[*.svelte]
+indent_size = 2
+tab_width = 2
+max_line_length = 100
+# <<< editorconfig-install:svelte

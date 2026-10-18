@@ -1,0 +1,39 @@
+schema_version: "1.0"
+workflow:
+  id: "pipeline-spike"
+  name: "Pipeline Spike Lane"
+  version: "1.0.0"
+  author: "ai-dev-pipeline"
+  description: "Spike lane — specify + review only (no implement)"
+
+requires:
+  speckit_version: ">=0.8.5"
+  integrations:
+    any: ["cursor", "claude", "copilot", "gemini", "opencode"]
+
+inputs:
+  spec:
+    type: string
+    required: true
+    prompt: "Spike question / exploration brief"
+  integration:
+    type: string
+    default: "auto"
+  spec_verdict:
+    type: string
+    enum: ["", approve, reject]
+    default: ""
+
+steps:
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.spec }}"
+
+  - id: review-spec
+    type: gate
+    message: "Review spike spec/options before stopping (no implement in spike)."
+    options: [approve, reject]
+    on_reject: abort
+    verdict_input: spec_verdict

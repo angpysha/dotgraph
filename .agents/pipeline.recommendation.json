@@ -1,0 +1,58 @@
+{
+  "project_brief": "PROJECT.md",
+  "code_search_source": "serena",
+  "detected_signals": [
+    "PROJECT.md: F# .NET 10 CLI",
+    "filesystem: 4 *.fsproj under src/ + 2 test projects",
+    "filesystem: NugetPackageHelper.slnx",
+    "filesystem: .github/workflows/ci.yml, publish.yml",
+    "serena: .serena/project.yml (project_name=package_helper, fsharp+powershell LSP)"
+  ],
+  "packs": [
+    { "name": "dotnet-minimal", "score": 0.95, "features": [] }
+  ],
+  "agents": [
+    { "name": "coordinator", "enabled": true },
+    { "name": "ba-analyst", "enabled": true },
+    { "name": "architect", "enabled": true },
+    { "name": "team-lead", "enabled": true },
+    { "name": "developer", "enabled": true },
+    { "name": "tester", "enabled": true },
+    { "name": "tech-writer", "enabled": true }
+  ],
+  "tracker": { "type": "beads", "prefix": "task" },
+  "pr": {
+    "type": "github",
+    "org": "angpysha",
+    "project": "",
+    "repo": "dotgraph",
+    "target_branch": "main",
+    "branch_prefix": { "feature": "feature/", "fix": "fix/", "chore": "chore/" }
+  },
+  "host": "cursor",
+  "build": { "command": "dotnet build --configuration Release --verbosity minimal" },
+  "test": {
+    "command": "dotnet test --configuration Release --verbosity minimal",
+    "filter": "",
+    "results": {
+      "directory": "TestResults",
+      "trx": "TestResults/test-results.trx",
+      "cobertura": "TestResults/coverage/cobertura.xml",
+      "summary": "TestResults/azure-devops-results.json"
+    }
+  },
+  "format": { "command": "" },
+  "dotgraph": { "toolVersion": "0.3.1", "snapshot": ".dotgraph.json" },
+  "spec_kit": {
+    "enabled": true,
+    "integration": "cursor",
+    "dir": ".specify",
+    "specs_dir": "specs",
+    "constitution": ".specify/memory/constitution.md"
+  },
+  "code_search": {
+    "primary": "serena",
+    "project_name": "package_helper"
+  },
+  "confidence": "high"
+}
